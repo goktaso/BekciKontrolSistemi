@@ -1,42 +1,35 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Collections.Generic;
 using Microsoft.Data.SqlClient;
 
 namespace GuvenlikKontrolWeb.Pages
 {
     public class IndexModel : PageModel
     {
-        public List<Nokta> NoktaListesi { get; set; } = new List<Nokta>();
+        [BindProperty]
+        public string SecimTipi { get; set; }
+
+        [BindProperty]
+        public DateTime BaslangicTarihi { get; set; }
+
+        [BindProperty]
+        public DateTime BitisTarihi { get; set; }
+
+        public List<AnalizModel> AnalizSonucu { get; set; } = new();
 
         public void OnGet()
         {
-            string connectionString = "Server=OZAY\\DATA;Database=GuvenlikKontrol;User Id=data;Password=data1234;TrustServerCertificate=True;";
+        }
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                conn.Open();
-
-                string query = "SELECT NoktaID, NoktaAdi FROM NoktaTanimlari";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                using (SqlDataReader dr = cmd.ExecuteReader())
-                {
-                    while (dr.Read())
-                    {
-                        NoktaListesi.Add(new Nokta
-                        {
-                            NoktaID = dr.GetInt32(0),
-                            NoktaAdi = dr.GetString(1)
-                        });
-                    }
-                }
-            }
+        public void OnPost()
+        {
         }
     }
 
-    public class Nokta
+    public class AnalizModel
     {
-        public int NoktaID { get; set; }
-        public string NoktaAdi { get; set; }
+        public string Tarih { get; set; }
+        public string Bekci { get; set; }
+        public int ToplamTur { get; set; }
     }
 }

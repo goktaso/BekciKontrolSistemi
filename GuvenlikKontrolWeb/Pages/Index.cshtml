@@ -1,22 +1,52 @@
 ﻿@page
 @model GuvenlikKontrolWeb.Pages.IndexModel
 
-<h2>Nokta Listesi</h2>
+<h2>Tur Analiz Paneli</h2>
 
-<table class="table">
-    <thead>
+<form method="post">
+
+    <div>
+        <input type="radio" asp-for="SecimTipi" value="TarihArasi" checked />
+        <label>İki Tarih Arası</label>
+
+        <input type="radio" asp-for="SecimTipi" value="Hafta" />
+        <label>Hafta Başından Beri</label>
+
+        <input type="radio" asp-for="SecimTipi" value="Ay" />
+        <label>Ay Başından Beri</label>
+    </div>
+
+    <div>
+        <label>Başlangıç Tarihi:</label>
+        <input type="datetime-local" asp-for="BaslangicTarihi" />
+    </div>
+
+    <div>
+        <label>Bitiş Tarihi:</label>
+        <input type="datetime-local" asp-for="BitisTarihi" />
+    </div>
+
+    <button type="submit">Analiz Getir</button>
+</form>
+
+<hr />
+
+@if (Model.AnalizSonucu != null && Model.AnalizSonucu.Count > 0)
+{
+    <table border="1">
         <tr>
-            <th>ID</th>
-            <th>Nokta Adı</th>
+            <th>Tarih</th>
+            <th>Bekçi</th>
+            <th>Toplam Tur</th>
         </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model.NoktaListesi)
+
+        @foreach (var item in Model.AnalizSonucu)
         {
             <tr>
-                <td>@item.NoktaID</td>
-                <td>@item.NoktaAdi</td>
+                <td>@item.Tarih</td>
+                <td>@item.Bekci</td>
+                <td>@item.ToplamTur</td>
             </tr>
         }
-    </tbody>
-</table>
+    </table>
+}

@@ -6,7 +6,7 @@
 <html lang="tr">
 <head>
     <meta charset="utf-8" />
-    <title>Tur Analiz Raporu</title>
+    <title>Tur Analiz</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
@@ -29,32 +29,30 @@
         </div>
     </div>
 
-    <table id="turAnalizTable" class="table table-striped table-bordered">
-        <thead id="tableHead"></thead>
-        <tbody id="tableBody"></tbody>
-    </table>
+   
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
+    <table id="turAnalizTable" class="table table-striped table-bordered">
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+
     <script>
         let dataTable;
 
         async function getTurAnaliz() {
-            let bas = document.getElementById('baslangic').value;
-            let bit = document.getElementById('bitis').value;
+            const bas = document.getElementById('baslangic').value;
+            const bit = document.getElementById('bitis').value;
+            if(!bas || !bit){ alert("Başlangıç ve bitiş tarih+saati seçin!"); return; }
 
-            if(!bas || !bit){
-                alert("Başlangıç ve bitiş tarih+saati seçin!");
-                return;
-            }
+            const basSQL = bas.replace('T',' ') + ':00';
+            const bitSQL = bit.replace('T',' ') + ':00';
 
-            bas = bas.replace('T',' ') + ':00';
-            bit = bit.replace('T',' ') + ':00';
-
-            const response = await fetch(`/api/TurAnaliz?baslangic=${encodeURIComponent(bas)}&bitis=${encodeURIComponent(bit)}`);
+            const response = await fetch(`/api/TurAnaliz?baslangic=${encodeURIComponent(basSQL)}&bitis=${encodeURIComponent(bitSQL)}`);
             const rawData = await response.json();
 
             const tableHead = document.getElementById('tableHead');
@@ -68,7 +66,6 @@
                 return;
             }
 
-            // Başlık
             const headers = ["Tarih","TurNo","No","Bekçi","Kontrol Noktası","Devriye Saati","İki Nokta Arası","İki Tur Arası"];
             tableHead.innerHTML = '<tr>' + headers.map(h=>`<th>${h}</th>`).join('') + '</tr>';
 
@@ -78,39 +75,47 @@
             let oncekiSaat = null;
             let oncekiTurBitis = null;
             let turToplamSn = 0;
+            let oncekiTurToplamSatir = 0;
             let dictNokta = {};
 
             rawData.forEach(row => {
                 const operasyonGunu = new Date(row.operasyonGunu);
                 const devriyeZamani = new Date(row.devriyeZamani);
-                const bekci = row.bekciAdi;
-                const kontrolNoktasi = row.kontrolNoktasiAdi;
-
                 if(isNaN(operasyonGunu.getTime()) || isNaN(devriyeZamani.getTime())) return;
 
-                // Yeni tur kontrolü
+                // ---------- TUR KONTROLÜ ----------
                 let yeniTur = false;
-                if(turNo===0 || (oncekiBekci && oncekiBekci!==bekci)) yeniTur=true;
-                if(dictNokta[kontrolNoktasi]>=2) yeniTur=true;
 
-                if(yeniTur && turIciNo>0){
+                // 1️⃣ Bekçi değiştiyse
+                if(oncekiBekci && oncekiBekci !== row.bekciAdi) yeniTur = true;
+
+                // 2️⃣ İki nokta arası > 15dk
+                if(oncekiSaat && (devriyeZamani-oncekiSaat)/1000 > 900) yeniTur = true;
+
+                // 3️⃣ Aynı nokta ikinci kez okutulmuşsa
+                if(dictNokta[row.kontrolNoktasiAdi] >= 1) yeniTur = true;
+
+                // Tur bitirme ve toplam satırı
+                if(yeniTur && turIciNo > 0){
                     const ikiTurSn = oncekiTurBitis ? Math.max(0,(devriyeZamani-oncekiTurBitis)/1000) : 0;
-                    addTurToplamSatir(turNo,turToplamSn,ikiTurSn);
-
-                    turToplamSn=0;
-                    dictNokta={};
-                    turIciNo=0;
+                    addTurToplamSatir(turNo, turToplamSn, ikiTurSn, oncekiTurToplamSatir);
+                    turToplamSn = 0;
+                    dictNokta = {};
+                    turIciNo = 0;
                 }
 
-                if(yeniTur) turNo++;
+                if(yeniTur) {
+                    turNo++;
+                    oncekiTurToplamSatir = tableBody.rows.length + 1; // toplam satırı eklenmesi için referans
+                }
 
                 turIciNo++;
-                oncekiBekci = bekci;
+                oncekiBekci = row.bekciAdi;
+                dictNokta[row.kontrolNoktasiAdi] = (dictNokta[row.kontrolNoktasiAdi]||0)+1;
 
-                dictNokta[kontrolNoktasi] = (dictNokta[kontrolNoktasi]||0)+1;
-
+                // ---------- İKİ NOKTA ARASI ----------
                 let farkSn = 0;
-                if(oncekiSaat){
+                if(turIciNo > 1 && oncekiSaat) {
                     farkSn = Math.max(0,(devriyeZamani-oncekiSaat)/1000);
                     turToplamSn += farkSn;
                 }
@@ -118,25 +123,27 @@
                 oncekiSaat = devriyeZamani;
                 oncekiTurBitis = devriyeZamani;
 
-                let tr = '<tr>';
-                tr += `<td>${operasyonGunu.toLocaleDateString('tr-TR')}</td>`;
-                tr += `<td>${turNo}</td>`;
-                tr += `<td>${turIciNo}</td>`;
-                tr += `<td>${bekci}</td>`;
-                tr += `<td>${kontrolNoktasi}</td>`;
-                tr += `<td>${devriyeZamani.toLocaleTimeString('tr-TR',{hour12:false})}</td>`;
-                tr += `<td>${formatTime(farkSn)}</td>`;
-                tr += `<td></td>`; // iki tur arası
-                tr += '</tr>';
-                tableBody.innerHTML += tr;
+                // ---------- SATIR EKLE ----------
+                let tr='<tr>';
+                tr+=`<td>${operasyonGunu.toLocaleDateString('tr-TR')}</td>`;
+                tr+=`<td>${turNo}</td>`;
+                tr+=`<td>${turIciNo}</td>`;
+                tr+=`<td>${row.bekciAdi}</td>`;
+                tr+=`<td>${row.kontrolNoktasiAdi}</td>`;
+                tr+=`<td>${devriyeZamani.toLocaleTimeString('tr-TR',{hour12:false})}</td>`;
+                tr+=`<td>${turIciNo===1 ? '00:00:00' : formatTime(farkSn)}</td>`; // 1.satır 00:00:00
+                tr+=`<td></td>`; // Iki Tur Arasi
+                tr+='</tr>';
+                tableBody.innerHTML+=tr;
             });
 
-            // Son tur toplam satırı
-            if(turIciNo>0) addTurToplamSatir(turNo,turToplamSn,0);
+            // Son turun toplam satırı
+            if(turIciNo>0) addTurToplamSatir(turNo, turToplamSn, 0, oncekiTurToplamSatir);
 
             if(dataTable) dataTable.destroy();
-            dataTable = $('#turAnalizTable').DataTable({paging:true,searching:true,lengthMenu:[10,25,50]});
+            dataTable = $('#turAnalizTable').DataTable({paging:true, searching:true, lengthMenu:[10,25,50]});
 
+            // ---------- YARDIMCI FONK. ----------
             function formatTime(sec){
                 const h = Math.floor(sec/3600).toString().padStart(2,'0');
                 const m = Math.floor((sec%3600)/60).toString().padStart(2,'0');
@@ -144,21 +151,22 @@
                 return `${h}:${m}:${s}`;
             }
 
-            function addTurToplamSatir(turNo,toplamSn,ikiTurSn){
+            function addTurToplamSatir(turNo, toplamSn, ikiTurSn, refSatir){
                 let tr='<tr style="background-color:rgb(255,255,153); font-weight:bold;">';
-                tr += `<td></td>`; // Tarih
-                tr += `<td>${turNo}</td>`;
-                tr += `<td></td>`; // No
-                tr += `<td></td>`; // Bekçi
-                tr += `<td>Tur ${turNo} Toplam</td>`;
-                tr += `<td></td>`; // Devriye Saati
-                tr += `<td>${formatTime(toplamSn)}</td>`; // iki nokta arası toplam
-                tr += `<td>${formatTime(ikiTurSn)}</td>`; // iki tur arası
-                tr += '</tr>';
-                tableBody.innerHTML += tr;
+                tr+=`<td></td>`;
+                tr+=`<td>${turNo}</td>`;
+                tr+=`<td></td>`;
+                tr+=`<td></td>`;
+                tr+=`<td>Tur ${turNo} Toplam</td>`;
+                tr+=`<td></td>`;
+                tr+=`<td>${formatTime(toplamSn)}</td>`;
+                tr+=`<td>${formatTime(ikiTurSn)}</td>`;
+                tr+='</tr>';
+                tableBody.innerHTML+=tr;
             }
         }
     </script>
+
 
 </body>
 </html>

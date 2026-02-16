@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Tur Sistemi</title>
 
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
 
     <style>
@@ -13,7 +12,6 @@
             overflow-x: hidden;
         }
 
-        /* Sidebar */
         .sidebar {
             width: 250px;
             min-height: 100vh;
@@ -39,7 +37,7 @@
                 border-top: 1px solid #dee2e6;
             }
 
-        /* Responsive */
+        /* Responsive düzeltildi */
         media (max-width: 768px) {
             .sidebar
 
@@ -74,7 +72,7 @@
 
             <ul class="nav flex-column p-2 mb-3">
                 <li class="nav-item">
-                    <a class="nav-link active" href="/Dashboard">Dashboard</a>
+                    <a class="nav-link" href="/Dashboard">Dashboard</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/TurAnaliz">Tur Analizi</a>
@@ -92,15 +90,20 @@
 
             <div class="filter-section">
                 <h6>Filtre</h6>
+
                 <div class="mb-2">
                     <label class="form-label">Başlangıç</label>
                     <input type="datetime-local" id="menuBas" class="form-control form-control-sm" />
                 </div>
+
                 <div class="mb-2">
                     <label class="form-label">Bitiş</label>
                     <input type="datetime-local" id="menuBit" class="form-control form-control-sm" />
                 </div>
-                <button onclick="goTurAnaliz()" class="btn btn-primary btn-sm w-100">Raporu Getir</button>
+
+                <button onclick="raporuGetir()" class="btn btn-primary btn-sm w-100">
+                    Raporu Getir
+                </button>
             </div>
         </div>
 
@@ -115,27 +118,40 @@
 
     </div>
 
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
     <script>
         function toggleSidebar() {
             document.getElementById("sidebar").classList.toggle("active");
         }
 
-        function goTurAnaliz() {
-            const bas = document.getElementById("menuBas")?.value;
-            const bit = document.getElementById("menuBit")?.value;
+                function raporuGetir() {
+
+            const bas = document.getElementById("menuBas").value;
+            const bit = document.getElementById("menuBit").value;
 
             if (!bas || !bit) {
                 alert("Başlangıç ve bitiş tarih ve saatini seçiniz!");
                 return;
             }
 
-            // Dashboard sayfasına yönlendirme, query param olarak tarih gönder
-            window.location.href = `/Dashboard?bas=${encodeURIComponent(bas)}&bit=${encodeURIComponent(bit)}`;
+            localStorage.setItem("baslangic", bas);
+            localStorage.setItem("bitis", bit);
+
+            // Her durumda TurAnaliz'e git
+            window.location.href = "/TurAnaliz";
         }
+
+
+        // Sayfa açıldığında localStorage varsa inputlara geri yaz
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const bas = localStorage.getItem("baslangic");
+            const bit = localStorage.getItem("bitis");
+
+            if (bas) document.getElementById("menuBas").value = bas;
+            if (bit) document.getElementById("menuBit").value = bit;
+        });
     </script>
 
     @await RenderSectionAsync("Scripts", required: false)

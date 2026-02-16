@@ -21,7 +21,7 @@ app.MapRazorPages();
 // ---------------- WebAPI Endpoint ----------------
 app.MapGet("/api/TurAnaliz", async (string baslangic, string bitis, IConfiguration config) =>
 {
-    var result = new List<dynamic>();
+    var result = new List<object>();
     var connectionString = config.GetConnectionString("DefaultConnection");
 
     try
@@ -30,8 +30,11 @@ app.MapGet("/api/TurAnaliz", async (string baslangic, string bitis, IConfigurati
         using var cmd = new SqlCommand("sp_TurAnalizi", conn);
         cmd.CommandType = CommandType.StoredProcedure;
 
-        cmd.Parameters.AddWithValue("@BasTarih", DateTime.Parse(baslangic));
-        cmd.Parameters.AddWithValue("@BitTarih", DateTime.Parse(bitis));
+        cmd.Parameters.Add("@BasTarih", SqlDbType.DateTime)
+            .Value = DateTime.Parse(baslangic);
+
+        cmd.Parameters.Add("@BitTarih", SqlDbType.DateTime)
+            .Value = DateTime.Parse(bitis);
 
         await conn.OpenAsync();
         using var reader = await cmd.ExecuteReaderAsync();
@@ -40,12 +43,16 @@ app.MapGet("/api/TurAnaliz", async (string baslangic, string bitis, IConfigurati
         {
             result.Add(new
             {
-                OperasyonGunu = reader.GetDateTime(0).ToString("yyyy-MM-ddTHH:mm:ss"),
-                BekciAdi = reader.GetString(1),
-                KontrolNoktasiAdi = reader.GetString(2),
-                // BigInt veya sayýsal tipleri önce GetValue() ile alýp string’e çeviriyoruz
-                OkuyucuKodu = reader.GetValue(3)?.ToString() ?? "",
-                DevriyeZamani = reader.GetDateTime(4).ToString("yyyy-MM-ddTHH:mm:ss")
+                satirTipi = reader["SatirTipi"]?.ToString(),
+                operasyonGunu = reader["OperasyonGunu"],
+                bekciAdi = reader["BekciAdi"]?.ToString(),
+                kontrolNoktasiAdi = reader["KontrolNoktasiAdi"]?.ToString(),
+                devriyeZamani = reader["DevriyeZamani"],
+                turNo = reader["TurNo"],
+                turIciNo = reader["TurIciNo"],
+                ikiNoktaArasiSn = reader["IkiNoktaArasiSn"],
+                turToplamSn = reader["TurToplamSn"],
+                ikiTurArasiSn = reader["IkiTurArasiSn"]
             });
         }
     }

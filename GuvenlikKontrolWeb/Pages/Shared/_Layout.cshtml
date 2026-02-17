@@ -77,9 +77,12 @@
                 <li class="nav-item">
                     <a class="nav-link" href="/TurAnaliz">Tur Analizi</a>
                 </li>
+                
                 <li class="nav-item">
-                    <a class="nav-link" href="/EksikNokta">Eksik Nokta</a>
+                    <a class="nav-link" href="#" onclick="gitEksikNokta()">Eksik Nokta</a>
                 </li>
+
+
                 <li class="nav-item">
                     <a class="nav-link" href="/GunlukTur">Günlük Tur</a>
                 </li>
@@ -142,6 +145,18 @@
             window.location.href = "/TurAnaliz";
         }
 
+                function gitEksikNokta() {
+            // Aynı tarihleri al ve Eksik Nokta sayfasına yönlendir
+            const bas = localStorage.getItem("baslangic");
+            const bit = localStorage.getItem("bitis");
+
+            if (!bas || !bit) {
+                alert("Önce tarih seçip Raporu Getir butonuna basınız!");
+                return;
+            }
+
+            window.location.href = `/EksikNokta`;
+        }
 
         // Sayfa açıldığında localStorage varsa inputlara geri yaz
         document.addEventListener("DOMContentLoaded", function () {

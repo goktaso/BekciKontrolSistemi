@@ -1,0 +1,126 @@
+﻿@page
+@model GuvenlikKontrolWeb.Pages.EksikNoktaModel
+@{
+    ViewData["Title"] = "Eksik Nokta";
+}
+
+<h4>Güvenlik Kontrol Noktası Eksik Nokta Raporu</h4>
+
+<div>
+    <table class="table table-sm table-bordered" id="eksikNoktaTablo">
+        <thead class="table-light">
+            <tr>
+                <th>Tur No</th>
+                <th>Bekçi</th>
+                <th>Kontrol Noktası</th>
+                <th>Tur Başlangıç</th>
+                <th>Tur Bitiş</th>
+                <th>Durum</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td colspan="6">Yükleniyor...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div id="grafikEksikNokta" style="width:100%; height:400px; margin-top:20px;"></div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        async function eksikNoktaGetir() {
+            const bas = localStorage.getItem("baslangic");
+            const bit = localStorage.getItem("bitis");
+
+            if (!bas || !bit) {
+                alert("Önce tarih seçip Raporu Getir butonuna basınız!");
+                return;
+            }
+
+            const res = await fetch(`/api/TurAnaliz?baslangic=${bas}&bitis=${bit}`);
+            const data = await res.json();
+
+            const beklenenNoktalar = [
+                "İdari Bina","Shring Mak.","Kalite Kontrol","Eski Kazan Yıkama(Vernik)",
+                "Trafo","Pasta Dairesi","Alkid Zemin","Alkid 1.Kat","Alkid 2.Kat",
+                "Kazan Dairesi","İnşaat Su Deposu","İnşaat Arka","İnşaat Üretim Platform",
+                "İnşaat Ambalaj Depo","Atölye"
+            ];
+
+            const eksikList = [];
+
+            const turGruplar = {};
+            data.forEach(row => {
+                if (row.satirTipi === "DETAY") {
+                    const key = `${row.turNo}|${row.bekciAdi}`;
+                    if (!turGruplar[key]) turGruplar[key] = [];
+                    turGruplar[key].push(row.kontrolNoktasiAdi);
+                }
+            });
+
+            Object.keys(turGruplar).forEach(key => {
+                const [turNo, bekci] = key.split("|");
+                const okutulan = turGruplar[key];
+                beklenenNoktalar.forEach(nokta => {
+                    if (!okutulan.includes(nokta)) {
+                        const tur = data.find(d => d.turNo == turNo && d.bekciAdi == bekci);
+                        eksikList.push({
+                            turNo,
+                            bekci,
+                            nokta,
+                            baslangic: tur ? tur.devriyeZamani : "",
+                            bitis: tur ? tur.devriyeZamani : "",
+                            durum: "Eksik"
+                        });
+                    }
+                });
+            });
+
+            const tbody = document.querySelector("#eksikNoktaTablo tbody");
+            tbody.innerHTML = "";
+            if (eksikList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6">Hiç eksik nokta yok, tüm turlar eksiksiz tamamlanmıştır.</td></tr>`;
+            } else {
+                eksikList.forEach(e => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${e.turNo}</td>
+                        <td>${e.bekci}</td>
+                        <td>${e.nokta}</td>
+                        <td>${e.baslangic}</td>
+                        <td>${e.bitis}</td>
+                        <td>${e.durum}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            const bekciler = [...new Set(eksikList.map(e => e.bekci))];
+            const dataGrafik = bekciler.map(b => eksikList.filter(e => e.bekci === b).length);
+
+            const ctx = document.getElementById('grafikEksikNokta').getContext('2d');
+            if (window.eksikChart) window.eksikChart.destroy();
+            window.eksikChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: bekciler,
+                    datasets: [{
+                        label: 'Eksik Nokta Sayısı',
+                        data: dataGrafik,
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'Bekçi Bazlı Eksik Noktalar' }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", eksikNoktaGetir);
+    </script>
+}

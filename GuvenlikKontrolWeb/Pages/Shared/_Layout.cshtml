@@ -37,8 +37,8 @@
                 border-top: 1px solid #dee2e6;
             }
 
-        /* Responsive düzeltildi */
-        media (max-width: 768px) {
+        /* Responsive */
+        @@media (max-width: 768px) {
             .sidebar
 
         {
@@ -62,36 +62,43 @@
     </style>
 </head>
 <body>
+
     <div class="d-flex">
 
-        <!-- Sidebar -->
+        <!-- SIDEBAR -->
         <div class="sidebar border-end" id="sidebar">
+
             <div class="p-3 border-bottom">
                 <h5>Tur Sistemi</h5>
             </div>
 
             <ul class="nav flex-column p-2 mb-3">
+
                 <li class="nav-item">
                     <a class="nav-link" href="/Dashboard">Dashboard</a>
                 </li>
+
                 <li class="nav-item">
                     <a class="nav-link" href="/TurAnaliz">Tur Analizi</a>
                 </li>
-                
+
                 <li class="nav-item">
                     <a class="nav-link" href="#" onclick="gitEksikNokta()">Eksik Nokta</a>
                 </li>
 
-
                 <li class="nav-item">
                     <a class="nav-link" href="/GunlukTur">Günlük Tur</a>
                 </li>
+
                 <li class="nav-item">
                     <a class="nav-link" href="/BekciPerformans">Bekçi Performansı</a>
                 </li>
+
             </ul>
 
+            <!-- FİLTRE -->
             <div class="filter-section">
+
                 <h6>Filtre</h6>
 
                 <div class="mb-2">
@@ -104,49 +111,86 @@
                     <input type="datetime-local" id="menuBit" class="form-control form-control-sm" />
                 </div>
 
-                <button onclick="raporuGetir()" class="btn btn-primary btn-sm w-100">
+                <button type="button"
+                        onclick="raporuGetir()"
+                        class="btn btn-primary btn-sm w-100">
                     Raporu Getir
                 </button>
+
             </div>
+
         </div>
 
-        <!-- Content -->
+
+        <!-- CONTENT -->
         <div class="content-area">
+
             <nav class="navbar navbar-light bg-light border-bottom mb-3 d-md-none">
                 <button class="btn btn-outline-secondary" onclick="toggleSidebar()">☰ Menü</button>
             </nav>
 
             @RenderBody()
+
         </div>
 
     </div>
 
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+
         function toggleSidebar() {
             document.getElementById("sidebar").classList.toggle("active");
         }
 
-                function raporuGetir() {
+
+                async function raporuGetir() {
 
             const bas = document.getElementById("menuBas").value;
             const bit = document.getElementById("menuBit").value;
 
             if (!bas || !bit) {
-                alert("Başlangıç ve bitiş tarih ve saatini seçiniz!");
+                alert("Başlangıç ve bitiş tarihini seçiniz!");
                 return;
             }
 
-            localStorage.setItem("baslangic", bas);
-            localStorage.setItem("bitis", bit);
+            try {
 
-            // Her durumda TurAnaliz'e git
-            window.location.href = "/TurAnaliz";
+                localStorage.setItem("baslangic", bas);
+                localStorage.setItem("bitis", bit);
+
+                const response = await fetch(`/api/turanaliz?baslangic=${bas}&bitis=${bit}`);
+
+                if (!response.ok) {
+                    alert("API hata verdi!");
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (!data || data.length === 0) {
+                    alert("Seçilen tarih aralığında veri bulunamadı.");
+                    return;
+                }
+
+                sessionStorage.setItem("turData", JSON.stringify(data));
+
+                // 🔥 ALERT KALDIRILDI
+                // 🔥 OTOMATİK TUR ANALİZ'E GİDİYOR
+
+                window.location.href = "/TurAnaliz";
+
+            } catch (err) {
+                console.error(err);
+                alert("Bir hata oluştu.");
+            }
         }
 
-                function gitEksikNokta() {
-            // Aynı tarihleri al ve Eksik Nokta sayfasına yönlendir
+
+
+        function gitEksikNokta() {
+
             const bas = localStorage.getItem("baslangic");
             const bit = localStorage.getItem("bitis");
 
@@ -155,10 +199,10 @@
                 return;
             }
 
-            window.location.href = `/EksikNokta`;
+            window.location.href = "/EksikNokta";
         }
 
-        // Sayfa açıldığında localStorage varsa inputlara geri yaz
+
         document.addEventListener("DOMContentLoaded", function () {
 
             const bas = localStorage.getItem("baslangic");
@@ -167,8 +211,10 @@
             if (bas) document.getElementById("menuBas").value = bas;
             if (bit) document.getElementById("menuBit").value = bit;
         });
+
     </script>
 
     @await RenderSectionAsync("Scripts", required: false)
+
 </body>
 </html>

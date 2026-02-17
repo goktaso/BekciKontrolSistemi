@@ -1,0 +1,165 @@
+﻿@page
+@{
+    ViewData["Title"] = "Günlük Tur";
+}
+
+<h2>Günlük Tur Raporu</h2>
+
+<div class="table-responsive mb-4">
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Tarih</th>
+                <th>Toplam Tur</th>
+                <th>Min Tur Süresi</th>
+                <th>Max Tur Süresi</th>
+                <th>Ortalama Tur Süresi</th>
+            </tr>
+        </thead>
+        <tbody id="gunlukTurBody">
+        </tbody>
+    </table>
+</div>
+
+<h4>Tur Süre Analizi</h4>
+<canvas id="sureChart" class="mb-5"></canvas>
+
+<h4>Günlük Tur Sayısı</h4>
+<canvas id="turChart"></canvas>
+
+@section Scripts {
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+    <script>
+
+        function saniyeToHHMMSS(saniye) {
+            if (!saniye) return "00:00:00";
+            let h = Math.floor(saniye / 3600);
+            let m = Math.floor((saniye % 3600) / 60);
+            let s = saniye % 60;
+            return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        }
+
+        function loadGunlukTur() {
+
+            const data = JSON.parse(sessionStorage.getItem("turData"));
+            const tbody = document.getElementById("gunlukTurBody");
+
+            if (!data) {
+                tbody.innerHTML =
+                    `<tr><td colspan="5" class="text-center">Önce Raporu Getir'e basınız.</td></tr>`;
+                return;
+            }
+
+            // SADECE TOPLAM SATIRLARI AL
+            const toplamSatirlar = data.filter(x => x.satirTipi === "TOPLAM");
+
+            const gunluk = {};
+
+            toplamSatirlar.forEach(row => {
+
+                const tarih = new Date(row.operasyonGunu).toLocaleDateString('tr-TR');
+
+                if (!gunluk[tarih]) {
+                    gunluk[tarih] = {
+                        turSayisi: 0,
+                        sureler: []
+                    };
+                }
+
+                gunluk[tarih].turSayisi++;
+                gunluk[tarih].sureler.push(row.turToplamSn);
+            });
+
+            tbody.innerHTML = "";
+
+            const labels = [];
+            const minArr = [];
+            const maxArr = [];
+            const ortArr = [];
+            const turSayArr = [];
+
+            Object.entries(gunluk)
+                .sort((a,b)=> new Date(a[0]) - new Date(b[0]))
+                .forEach(([tarih, val]) => {
+
+                    const min = Math.min(...val.sureler);
+                    const max = Math.max(...val.sureler);
+                    const ort = Math.floor(val.sureler.reduce((a,b)=>a+b,0) / val.sureler.length);
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${tarih}</td>
+                            <td>${val.turSayisi}</td>
+                            <td>${saniyeToHHMMSS(min)}</td>
+                            <td>${saniyeToHHMMSS(max)}</td>
+                            <td>${saniyeToHHMMSS(ort)}</td>
+                        </tr>
+                    `;
+
+                    labels.push(tarih);
+                    minArr.push(min);
+                    maxArr.push(max);
+                    ortArr.push(ort);
+                    turSayArr.push(val.turSayisi);
+                });
+
+            // -------- SÜRE GRAFİĞİ --------
+            new Chart(document.getElementById("sureChart"), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: "Min Süre", data: minArr },
+                        { label: "Max Süre", data: maxArr },
+                        { label: "Ortalama Süre", data: ortArr }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: function(value) {
+                                    return saniyeToHHMMSS(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // -------- TUR SAYISI BAR GRAFİĞİ --------
+            new Chart(document.getElementById("turChart"), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Toplam Tur",
+                        data: turSayArr
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        datalabels: {
+                            anchor: 'center',
+                            align: 'center',
+                            color: 'black',
+                            font: {
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+
+        }
+
+        document.addEventListener("DOMContentLoaded", loadGunlukTur);
+
+    </script>
+}

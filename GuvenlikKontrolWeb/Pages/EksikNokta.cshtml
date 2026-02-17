@@ -5,6 +5,7 @@
 }
 
 <h4>Güvenlik Kontrol Noktası Eksik Nokta Raporu</h4>
+<div id="seciliTarih" class="mb-3 fw-bold"></div>
 
 <div>
     <table class="table table-sm table-bordered" id="eksikNoktaTablo">
@@ -43,7 +44,8 @@
                 alert("Önce tarih seçip Raporu Getir butonuna basınız!");
                 return;
             }
-
+             document.getElementById("seciliTarih").innerHTML =
+                `Seçilen Aralık: ${formatDate(bas)} - ${formatDate(bit)}`;
             const res = await fetch(`/api/TurAnaliz?baslangic=${bas}&bitis=${bit}`);
             const data = await res.json();
 

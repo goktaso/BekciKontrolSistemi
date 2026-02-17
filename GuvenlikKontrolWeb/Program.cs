@@ -64,4 +64,40 @@ app.MapGet("/api/TurAnaliz", async (string baslangic, string bitis, IConfigurati
     return Results.Ok(result);
 });
 
+app.MapGet("/api/EksikNokta", async (string baslangic, string bitis, IConfiguration config) =>
+{
+    var result = new List<object>();
+    var connectionString = config.GetConnectionString("DefaultConnection");
+
+    try
+    {
+        using var conn = new SqlConnection(connectionString);
+        using var cmd = new SqlCommand("sp_EksikNoktaOzet", conn);
+        cmd.CommandType = CommandType.StoredProcedure;
+
+        cmd.Parameters.Add("@BasTarih", SqlDbType.DateTime).Value = DateTime.Parse(baslangic);
+        cmd.Parameters.Add("@BitTarih", SqlDbType.DateTime).Value = DateTime.Parse(bitis);
+
+        await conn.OpenAsync();
+        using var reader = await cmd.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            result.Add(new
+            {
+                operasyonGunu = reader["OperasyonGunu"],
+                bekciAdi = reader["BekciAdi"].ToString(),
+                eksikNoktaSayisi = Convert.ToInt32(reader["EksikNoktaSayisi"])
+            });
+        }
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+
+    return Results.Ok(result);
+});
+
+
 app.Run();

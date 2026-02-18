@@ -4,101 +4,105 @@
     ViewData["Title"] = "Tur Analiz";
 }
 
-<h2>Tur Analiz Raporu</h2>
+<div class="container-fluid shadow-sm p-3 mb-5 bg-body rounded">
+    <h2 class="text-primary border-bottom pb-2">🕵️ Tur Analiz Raporu</h2>
+    <div id="seciliTarih" class="mb-3 fw-bold text-muted"></div>
 
-<div id="seciliTarih" class="mb-3 fw-bold"></div>
-
-<div class="table-responsive">
-    <table class="table table-striped table-bordered">
-        <thead>
-            <tr>
-                <th>Tarih</th>
-                <th>Tur No</th>
-                <th>No</th>
-                <th>Bekçi</th>
-                <th>Kontrol Noktası</th>
-                <th>Devriye Saati</th>
-                <th>İki Nokta Arası</th>
-                <th>İki Tur Arası</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody">
-            <tr>
-                <td colspan="8" class="text-center">Veri yükleniyor...</td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered border-primary">
+            <thead class="table-dark">
+                <tr>
+                    <th>Tarih</th>
+                    <th>Tur No</th>
+                    <th>Sıra</th>
+                    <th>Bekçi</th>
+                    <th>Kontrol Noktası</th>
+                    <th>Devriye Saati</th>
+                    <th>İki Nokta Arası</th>
+                    <th>İki Tur Arası</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr>
+                    <td colspan="8" class="text-center">Veri hazırlanıyor...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 @section Scripts {
-
     <script>
-
         async function loadTurAnaliz() {
-
             const bas = localStorage.getItem("baslangic");
             const bit = localStorage.getItem("bitis");
 
-            if (!bas || !bit) {
-                document.getElementById("seciliTarih").innerHTML =
-                    "Lütfen sol menüden tarih seçip raporu getiriniz.";
+            // ÖNEMLİ: Daha önce çekilmiş veriyi kontrol et (sessionStorage)
+            const cachedData = sessionStorage.getItem("turData");
 
-                document.getElementById("tableBody").innerHTML =
-                    `<tr><td colspan="8" class="text-center">Veri bulunamadı.</td></tr>`;
+            if (!bas || !bit) {
+                document.getElementById("seciliTarih").innerHTML = "Lütfen tarih seçimi yapınız.";
+                document.getElementById("tableBody").innerHTML = `<tr><td colspan="8" class="text-center">Veri bulunamadı.</td></tr>`;
                 return;
             }
 
-            document.getElementById("seciliTarih").innerHTML =
-                `Seçilen Aralık: ${formatDate(bas)} - ${formatDate(bit)}`;
+            document.getElementById("seciliTarih").innerHTML = `📅 Seçilen Aralık: ${formatDate(bas)} - ${formatDate(bit)}`;
 
             try {
+                let data;
 
-                const response = await fetch(`/api/TurAnaliz?baslangic=${bas}&bitis=${bit}`);
+                // DEĞİŞİKLİK 1: Tekrar hesaplama yapmaması için hafızayı kontrol et
+                if (cachedData && cachedData !== "[]") {
+                    console.log("Veriler hafızadan getirildi (Hesaplama tekrar edilmedi).");
+                    data = JSON.parse(cachedData);
+                } else {
+                    console.log("Hafızada veri yok, API sorgusu başlatılıyor...");
+                    const response = await fetch(`/api/TurAnaliz?baslangic=${bas}&bitis=${bit}`);
+                    if (!response.ok) throw new Error("API Hatası");
+                    data = await response.json();
 
-                if (!response.ok) {
-                    throw new Error("API Hatası");
+                    // Veriyi hafızaya al (Bir sonraki basışta buradan okuyacak)
+                    sessionStorage.setItem("turData", JSON.stringify(data));
                 }
 
-                const data = await response.json();
                 const tableBody = document.getElementById("tableBody");
-
                 tableBody.innerHTML = "";
 
                 if (!data || data.length === 0) {
-                    tableBody.innerHTML =
-                        `<tr><td colspan="8" class="text-center">Veri bulunamadı.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="8" class="text-center">Veri bulunamadı.</td></tr>`;
                     return;
                 }
 
+                // DEĞİŞİKLİK 2: Toplam satırının turun sonunda çıkması için sıralama
+                data.sort((a, b) => {
+                    if (a.turNo !== b.turNo) return a.turNo - b.turNo;
+                    // Detayları (A) üstte, Toplamları (T) altta göster (T > D olduğu için alfabetik ters mantık)
+                    return a.satirTipi === "TOPLAM" ? 1 : -1;
+                });
+
                 data.forEach(row => {
-
-                    // TOPLAM SATIRI
                     if (row.satirTipi === "TOPLAM") {
-
+                        // TOPLAM SATIRI GÖRSELİ
                         tableBody.innerHTML += `
-                            <tr style="background-color:rgb(255,255,153); font-weight:bold;">
+                            <tr style="background-color:#fff9c4; font-weight:bold; border-top: 2px solid #000;">
+                                <td class="text-end" colspan="4">🏁</td>
+                                <td class="text-primary text-center">TUR ${row.turNo} ÖZETİ</td>
                                 <td></td>
-                                <td>${row.turNo ?? ''}</td>
-                                <td></td>
-                                <td></td>
-                                <td>Tur ${row.turNo} Toplam</td>
-                                <td></td>
-                                <td>${formatDuration(row.turToplamSn)}</td>
-                                <td>${formatDuration(row.ikiTurArasiSn)}</td>
+                                <td class="text-success">${formatDuration(row.turToplamSn)}</td>
+                                <td class="text-danger">${formatDuration(row.ikiTurArasiSn)}</td>
                             </tr>
                         `;
-
                     } else {
-
+                        // DETAY SATIRI
                         tableBody.innerHTML += `
                             <tr>
                                 <td>${formatOnlyDate(row.operasyonGunu)}</td>
-                                <td>${row.turNo ?? ''}</td>
-                                <td>${row.turIciNo ?? ''}</td>
+                                <td class="text-center">${row.turNo ?? ''}</td>
+                                <td class="text-center">${row.turIciNo ?? ''}</td>
                                 <td>${row.bekciAdi ?? ''}</td>
                                 <td>${row.kontrolNoktasiAdi ?? ''}</td>
-                                <td>${formatOnlyTime(row.devriyeZamani)}</td>
-                                <td>${formatDuration(row.ikiNoktaArasiSn)}</td>
+                                <td class="text-center">${formatOnlyTime(row.devriyeZamani)}</td>
+                                <td class="text-center">${formatDuration(row.ikiNoktaArasiSn)}</td>
                                 <td></td>
                             </tr>
                         `;
@@ -106,30 +110,30 @@
                 });
 
             } catch (err) {
-
-                document.getElementById("tableBody").innerHTML =
-                    `<tr><td colspan="8" class="text-danger text-center">Hata oluştu</td></tr>`;
+                console.error(err);
+                document.getElementById("tableBody").innerHTML = `<tr><td colspan="8" class="text-danger text-center">Hata: ${err.message}</td></tr>`;
             }
         }
 
+        // Yardımcı Fonksiyonlar
         function formatDuration(seconds) {
             if (!seconds || seconds <= 0) return "00:00:00";
-
-            const h = Math.floor(seconds / 3600).toString().padStart(2,'0');
-            const m = Math.floor((seconds % 3600) / 60).toString().padStart(2,'0');
-            const s = Math.floor(seconds % 60).toString().padStart(2,'0');
-
+            const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+            const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+            const s = Math.floor(seconds % 60).toString().padStart(2, '0');
             return `${h}:${m}:${s}`;
         }
 
         function formatOnlyDate(dateStr) {
+            if(!dateStr) return "-";
             const d = new Date(dateStr);
             return d.toLocaleDateString('tr-TR');
         }
 
         function formatOnlyTime(dateStr) {
+            if(!dateStr) return "-";
             const d = new Date(dateStr);
-            return d.toLocaleTimeString('tr-TR', { hour12:false });
+            return d.toLocaleTimeString('tr-TR', { hour12: false });
         }
 
         function formatDate(dateStr) {
@@ -138,7 +142,5 @@
         }
 
         document.addEventListener("DOMContentLoaded", loadTurAnaliz);
-
     </script>
-
 }

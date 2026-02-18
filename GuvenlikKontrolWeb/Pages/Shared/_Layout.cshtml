@@ -127,26 +127,32 @@
         });
 
         // Rapor Getirme Fonksiyonu
-        async function raporuGetir() {
+               async function raporuGetir() {
             const bas = document.getElementById("menuBas").value;
             const bit = document.getElementById("menuBit").value;
             if (!bas || !bit) return alert("Lütfen tarih seçiniz!");
 
             const btn = document.getElementById("btnRapor");
-            btn.disabled = true; btn.innerText = "İşleniyor...";
+            btn.disabled = true; btn.innerText = "Sorgulanıyor...";
 
             try {
+                // SQL'den veriyi çek
                 const res = await fetch(`/api/TurAnaliz?baslangic=${bas}&bitis=${bit}`);
                 const data = await res.json();
 
+                // Veriyi ve tarihleri belleğe kaydet
                 localStorage.setItem("baslangic", bas);
                 localStorage.setItem("bitis", bit);
-                sessionStorage.setItem("turData", JSON.stringify(data));
+                sessionStorage.setItem("turData", JSON.stringify(data)); // BURASI KRİTİK
 
-                alert("✅ Veriler başarıyla güncellenmiştir.\nİlgili rapor detaylarını sol menüden seçebilirsiniz.");
-                location.reload();
+                alert("✅ Veriler güncellendi. Menüden raporları inceleyebilirsiniz.");
+
+                // Eğer zaten Tur Analizi sayfasındaysak verilerin anlık değişmesi için:
+                if(window.location.pathname === "/TurAnaliz") {
+                    location.reload();
+                }
             } catch (err) {
-                alert("Veri çekilirken bir hata oluştu!");
+                alert("Sorgu sırasında hata oluştu!");
             } finally {
                 btn.disabled = false; btn.innerText = "Raporu Güncelle";
             }

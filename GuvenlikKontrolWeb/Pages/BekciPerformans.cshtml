@@ -1,0 +1,162 @@
+﻿@page
+@model GuvenlikKontrolWeb.Pages.BekciPerformansModel
+@{
+    ViewData["Title"] = "Bekçi Performans Raporu";
+}
+
+<div class="container-fluid">
+    <h2 class="mb-4">Bekçi Performans Raporu</h2>
+
+    <div id="statusInfo" class="alert alert-info">
+        Lütfen sol menüden tarih seçip "Raporu Getir" butonuna basınız.
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-primary text-white">
+            <h6 class="m-0 font-weight-bold">Performans Detay Tablosu</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped" id="perfTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Bekçi Adı</th>
+                            <th class="text-center">Toplam Tur</th>
+                            <th class="text-center">Eksiksiz Tur</th>
+                            <th class="text-center">Eksikli Tur</th>
+                            <th class="text-center">Eksik Nokta</th>
+                            <th class="text-center">Başarı %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="perfBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-success text-white">
+            <h6 class="m-0 font-weight-bold">Performans Karşılaştırma Grafiği</h6>
+        </div>
+        <div class="card-body">
+            <div style="height: 400px; width: 100%;">
+                <canvas id="perfChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let myChart;
+
+        async function loadPerformans() {
+            const bas = localStorage.getItem("baslangic");
+            const bit = localStorage.getItem("bitis");
+
+            if (!bas || !bit) return;
+
+            try {
+                const response = await fetch(`/api/BekciPerformans?baslangic=${bas}&bitis=${bit}`);
+                const data = await response.json();
+
+                if (!data || data.length === 0) {
+                    document.getElementById("statusInfo").innerText = "Seçilen tarihlerde veri bulunamadı.";
+                    document.getElementById("statusInfo").style.display = "block";
+                    return;
+                }
+                document.getElementById("statusInfo").style.display = "none";
+
+                // 1. Tabloyu Doldur
+                const tbody = document.getElementById("perfBody");
+                tbody.innerHTML = "";
+                data.forEach(item => {
+                    tbody.innerHTML += `<tr>
+                        <td class="fw-bold">${item.bekciAdi}</td>
+                        <td class="text-center">${item.toplamTur}</td>
+                        <td class="text-center text-success">${item.eksiksizTur}</td>
+                        <td class="text-center text-danger">${item.eksikTur}</td>
+                        <td class="text-center">${item.toplamEksikNokta}</td>
+                        <td class="text-center fw-bold text-primary">%${item.performans}</td>
+                    </tr>`;
+                });
+
+                // 2. Grafiği Çiz
+                renderChart(data);
+
+            } catch (err) {
+                console.error("Hata:", err);
+            }
+        }
+
+               function renderChart(data) {
+            const ctx = document.getElementById('perfChart').getContext('2d');
+            if (myChart) myChart.destroy();
+
+            const colors = data.map((_, index) => `hsl(${(index * 360) / data.length}, 70%, 55%)`);
+            const borderColors = data.map((_, index) => `hsl(${(index * 360) / data.length}, 70%, 40%)`);
+
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(x => x.bekciAdi),
+                    datasets: [{
+                        label: 'Başarı Oranı (%)',
+                        data: data.map(x => x.performans),
+                        backgroundColor: colors,
+                        borderColor: borderColors,
+                        borderWidth: 1,
+                        barThickness: 50
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: true }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, max: 110 } // Üstte biraz boşluk kalsın
+                    },
+                    animation: {
+                        onComplete: function() {
+                            const chartInstance = this;
+                            const ctx = chartInstance.ctx;
+
+                            ctx.font = "bold 14px Arial";
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle'; // Dikeyde tam orta
+
+                            this.data.datasets.forEach(function(dataset, i) {
+                                const meta = chartInstance.getDatasetMeta(i);
+                                meta.data.forEach(function(bar, index) {
+                                    const dataValue = dataset.data[index];
+
+                                    // Yazı rengini barın içinde daha net görünmesi için beyaz yapıyoruz
+                                    ctx.fillStyle = '#ffffff';
+
+                                    // bar.y: barın tepe noktası, bar.base: barın alt noktası
+                                    // İkisinin ortasını hesaplayarak metni tam merkeze yazıyoruz
+                                    const centerY = bar.y + (bar.base - bar.y) / 2;
+
+                                    // Eğer performans çok düşükse (%5 gibi) metin barın dışına taşmasın diye kontrol
+                                    if (dataValue > 10) {
+                                        ctx.fillText('%' + dataValue, bar.x, centerY);
+                                    } else {
+                                        // Çok küçük barlarda metni barın hemen üstüne siyah yaz
+                                        ctx.fillStyle = '#000000';
+                                        ctx.fillText('%' + dataValue, bar.x, bar.y - 10);
+                                    }
+                                });
+                            });
+                        }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", loadPerformans);
+    </script>
+}

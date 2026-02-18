@@ -3,218 +3,218 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Tur Sistemi</title>
+    <title>@ViewData["Title"] - Güvenlik Tur Sistemi</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
 
     <style>
         body {
             overflow-x: hidden;
+            background-color: #f4f7f6;
         }
 
+        /* Modern & Canlı Sidebar */
         .sidebar {
-            width: 250px;
+            width: 260px;
             min-height: 100vh;
-            background-color: #f8f9fa;
-        }
-
-            .sidebar .nav-link {
-                color: #333;
-            }
-
-                .sidebar .nav-link.active {
-                    background-color: #0d6efd;
-                    color: white;
-                    font-weight: bold;
-                }
-
-                .sidebar .nav-link:hover {
-                    background-color: #e9ecef;
-                }
-
-            .sidebar .filter-section {
-                padding: 1rem;
-                border-top: 1px solid #dee2e6;
-            }
-
-        /* Responsive */
-        @@media (max-width: 768px) {
-            .sidebar
-
-        {
-            position: fixed;
-            left: -250px;
-            top: 0;
-            z-index: 1050;
+            /* Canlı Lacivert-Mavi Geçiş (Gradient) */
+            background: linear-gradient(180deg, #1a2a6c 0%, #203a43 50%, #2c5364 100%);
+            color: white;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.3);
             transition: all 0.3s;
         }
 
-        .sidebar.active {
-            left: 0;
+            .sidebar .p-3.border-bottom {
+                border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+                background: rgba(0,0,0,0.1);
+            }
+
+            .sidebar .nav-link {
+                color: rgba(255,255,255,0.7);
+                padding: 12px 20px;
+                margin: 4px 12px;
+                border-radius: 10px;
+                transition: all 0.2s ease;
+                font-weight: 500;
+            }
+
+                .sidebar .nav-link:hover {
+                    background: rgba(255,255,255,0.1);
+                    color: #00d2ff;
+                    transform: translateX(5px);
+                }
+
+                .sidebar .nav-link.active {
+                    background: #00d2ff; /* Parlak Turkuaz */
+                    color: white;
+                    box-shadow: 0 4px 15px rgba(0,210,255,0.4);
+                }
+
+        /* Filtre ve Export Alanları */
+        .filter-section {
+            padding: 1.2rem;
+            background: rgba(255,255,255,0.08);
+            margin: 15px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
+            .filter-section h6 {
+                color: #00d2ff;
+                font-size: 0.85rem;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                margin-bottom: 1rem;
+            }
+
+        .export-buttons .btn {
+            font-size: 0.85rem;
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: transform 0.2s;
         }
+
+            .export-buttons .btn:hover {
+                transform: scale(1.02);
+            }
 
         .content-area {
             flex: 1;
             padding: 2rem;
+        }
+
+        label.form-label {
+            color: rgba(255,255,255,0.8);
+            font-size: 0.8rem;
         }
     </style>
 </head>
 <body>
 
     <div class="d-flex">
-
-        <!-- SIDEBAR -->
         <div class="sidebar border-end" id="sidebar">
-
-            <div class="p-3 border-bottom">
-                <h5>Tur Sistemi</h5>
+            <div class="p-3 border-bottom mb-2 text-center">
+                <h5 class="m-0 fw-bold" style="color: #00d2ff;">GÜVENLİK TUR</h5>
+                <small class="text-white-50">Kontrol Paneli</small>
             </div>
 
-            <ul class="nav flex-column p-2 mb-3">
-
+            <ul class="nav flex-column mb-3">
                 <li class="nav-item">
-                    <a class="nav-link" href="/Dashboard">Dashboard</a>
+                    <a class="nav-link" href="/Dashboard">📊 Dashboard</a>
                 </li>
-
                 <li class="nav-item">
-                    <a class="nav-link" href="/TurAnaliz">Tur Analizi</a>
+                    <a class="nav-link" href="/TurAnaliz">🕵️ Tur Analizi</a>
                 </li>
-
                 <li class="nav-item">
-                    <a class="nav-link" href="#" onclick="gitEksikNokta()">Eksik Nokta</a>
+                    <a class="nav-link" href="#" onclick="gitEksikNokta()">⚠️ Eksik Nokta</a>
                 </li>
-
                 <li class="nav-item">
-                    <a class="nav-link" href="/GunlukTur">Günlük Tur</a>
+                    <a class="nav-link" href="/GunlukTur">📅 Günlük Tur</a>
                 </li>
-
                 <li class="nav-item">
-                    <a class="nav-link" href="/BekciPerformans">Bekçi Performansı</a>
+                    <a class="nav-link" href="/BekciPerformans">⭐ Bekçi Performansı</a>
                 </li>
-
             </ul>
 
-            <!-- FİLTRE -->
             <div class="filter-section">
-
-                <h6>Filtre</h6>
-
-                <div class="mb-2">
+                <h6>Zaman Aralığı</h6>
+                <div class="mb-3">
                     <label class="form-label">Başlangıç</label>
-                    <input type="datetime-local" id="menuBas" class="form-control form-control-sm" />
+                    <input type="datetime-local" id="menuBas" class="form-control form-control-sm bg-dark text-white border-0" />
                 </div>
-
-                <div class="mb-2">
+                <div class="mb-3">
                     <label class="form-label">Bitiş</label>
-                    <input type="datetime-local" id="menuBit" class="form-control form-control-sm" />
+                    <input type="datetime-local" id="menuBit" class="form-control form-control-sm bg-dark text-white border-0" />
                 </div>
-
-                <button type="button"
-                        onclick="raporuGetir()"
-                        class="btn btn-primary btn-sm w-100">
-                    Raporu Getir
+                <button type="button" onclick="raporuGetir()" class="btn btn-info btn-sm w-100 fw-bold text-white shadow-sm">
+                    Raporu Güncelle
                 </button>
-
             </div>
 
+            <div class="filter-section export-buttons">
+                <h6>Dışa Aktar</h6>
+                <button onclick="exportToExcel()" class="btn btn-success btn-sm w-100 mb-2">
+                    Excel (.xlsx)
+                </button>
+                <button onclick="exportToPDF()" class="btn btn-danger btn-sm w-100">
+                    PDF (.pdf)
+                </button>
+            </div>
         </div>
 
-
-        <!-- CONTENT -->
         <div class="content-area">
-
-            <nav class="navbar navbar-light bg-light border-bottom mb-3 d-md-none">
-                <button class="btn btn-outline-secondary" onclick="toggleSidebar()">☰ Menü</button>
-            </nav>
-
             @RenderBody()
-
         </div>
-
     </div>
 
-
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <script>
-
-        function toggleSidebar() {
-            document.getElementById("sidebar").classList.toggle("active");
-        }
-
-
-                async function raporuGetir() {
-
-            const bas = document.getElementById("menuBas").value;
-            const bit = document.getElementById("menuBit").value;
-
-            if (!bas || !bit) {
-                alert("Başlangıç ve bitiş tarihini seçiniz!");
-                return;
-            }
-
-            try {
-
-                localStorage.setItem("baslangic", bas);
-                localStorage.setItem("bitis", bit);
-
-                const response = await fetch(`/api/turanaliz?baslangic=${bas}&bitis=${bit}`);
-
-                if (!response.ok) {
-                    alert("API hata verdi!");
-                    return;
-                }
-
-                const data = await response.json();
-
-                if (!data || data.length === 0) {
-                    alert("Seçilen tarih aralığında veri bulunamadı.");
-                    return;
-                }
-
-                sessionStorage.setItem("turData", JSON.stringify(data));
-
-                // 🔥 ALERT KALDIRILDI
-                // 🔥 OTOMATİK TUR ANALİZ'E GİDİYOR
-
-                window.location.href = "/TurAnaliz";
-
-            } catch (err) {
-                console.error(err);
-                alert("Bir hata oluştu.");
-            }
-        }
-
-
-
-        function gitEksikNokta() {
-
-            const bas = localStorage.getItem("baslangic");
-            const bit = localStorage.getItem("bitis");
-
-            if (!bas || !bit) {
-                alert("Önce tarih seçip Raporu Getir butonuna basınız!");
-                return;
-            }
-
-            window.location.href = "/EksikNokta";
-        }
-
-
+        // Sayfa Aktifliğini Yönetme
         document.addEventListener("DOMContentLoaded", function () {
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                }
+            });
 
             const bas = localStorage.getItem("baslangic");
             const bit = localStorage.getItem("bitis");
-
             if (bas) document.getElementById("menuBas").value = bas;
             if (bit) document.getElementById("menuBit").value = bit;
         });
 
+        // Rapor Getirme ve Session Kayıt
+        async function raporuGetir() {
+            const bas = document.getElementById("menuBas").value;
+            const bit = document.getElementById("menuBit").value;
+
+            if (!bas || !bit) { alert("Tarih seçiniz!"); return; }
+
+            localStorage.setItem("baslangic", bas);
+            localStorage.setItem("bitis", bit);
+
+            const res = await fetch(`/api/TurAnaliz?baslangic=${bas}&bitis=${bit}`);
+            const data = await res.json();
+            sessionStorage.setItem("turData", JSON.stringify(data));
+
+            location.reload(); // Mevcut sayfayı yeni verilerle yeniler
+        }
+
+        function gitEksikNokta() {
+            if (!localStorage.getItem("baslangic")) { alert("Önce rapor getiriniz!"); return; }
+            window.location.href = "/EksikNokta";
+        }
+
+        // --- EXPORT FONKSİYONLARI ---
+        function exportToExcel() {
+            const table = document.querySelector("table");
+            if (!table) { alert("Aktarılacak tablo bulunamadı!"); return; }
+            const wb = XLSX.utils.table_to_book(table, { sheet: "Rapor" });
+            XLSX.writeFile(wb, "Guvenlik_Raporu_" + new Date().toLocaleDateString() + ".xlsx");
+        }
+
+        function exportToPDF() {
+            const element = document.querySelector(".content-area");
+            const opt = {
+                margin: 0.3,
+                filename: 'Guvenlik_Raporu.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
     </script>
 
     @await RenderSectionAsync("Scripts", required: false)
-
 </body>
 </html>

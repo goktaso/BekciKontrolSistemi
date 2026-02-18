@@ -3,85 +3,112 @@
 @{
     ViewData["Title"] = "Bekçi Performans Raporu";
 }
-<h2>Test1</h2>
 
-<div class="container-fluid">
-    <h2 class="mb-4">Bekçi Performans Raporu</h2>
-
-    <div id="statusInfo" class="alert alert-info">
-        Lütfen sol menüden tarih seçip "Raporu Getir" butonuna basınız.
+<div class="container-fluid animate__animated animate__fadeIn">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary fw-bold m-0"><i class="bi bi-person-badge me-2"></i>Bekçi Performans Analizi</h2>
+        <div id="tarihGosterge" class="badge bg-light text-dark border p-2"></div>
     </div>
 
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 bg-primary text-white">
-            <h6 class="m-0 font-weight-bold">Performans Detay Tablosu</h6>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-striped" id="perfTable">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Bekçi Adı</th>
-                            <th class="text-center">Toplam Tur</th>
-                            <th class="text-center">Eksiksiz Tur</th>
-                            <th class="text-center">Eksikli Tur</th>
-                            <th class="text-center">Eksik Nokta</th>
-                            <th class="text-center">Başarı %</th>
-                        </tr>
-                    </thead>
-                    <tbody id="perfBody"></tbody>
-                </table>
+    <div id="statusInfo" class="alert alert-info shadow-sm border-start border-info border-4">
+        <i class="bi bi-info-circle-fill me-2"></i>Lütfen sol menüden tarih seçip "Raporu Güncelle" butonuna basınız.
+    </div>
+
+    <div class="row">
+        <div class="col-xl-12 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header py-3 bg-white d-flex align-items-center">
+                    <h6 class="m-0 font-weight-bold text-success"><i class="bi bi-bar-chart-line me-2"></i>Başarı Oranı Karşılaştırması (%)</h6>
+                </div>
+                <div class="card-body">
+                    <div style="height: 350px; width: 100%;">
+                        <canvas id="perfChart"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 bg-success text-white">
-            <h6 class="m-0 font-weight-bold">Performans Karşılaştırma Grafiği</h6>
-        </div>
-        <div class="card-body">
-            <div style="height: 400px; width: 100%;">
-                <canvas id="perfChart"></canvas>
+        <div class="col-xl-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header py-3 bg-dark text-white">
+                    <h6 class="m-0 font-weight-bold"><i class="bi bi-table me-2"></i>Performans Detay Verileri</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="perfTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Bekçi Adı</th>
+                                    <th class="text-center">Toplam Tur</th>
+                                    <th class="text-center">Eksiksiz Tur</th>
+                                    <th class="text-center">Eksikli Tur</th>
+                                    <th class="text-center">Eksik Nokta</th>
+                                    <th class="text-center">Başarı Oranı</th>
+                                </tr>
+                            </thead>
+                            <tbody id="perfBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         let myChart;
+
+        document.addEventListener("DOMContentLoaded", function() {
+            // Tarih bilgisini göstergeye yaz
+            const bas = localStorage.getItem("baslangic");
+            const bit = localStorage.getItem("bitis");
+            if(bas && bit) {
+                document.getElementById("tarihGosterge").innerHTML = `📅 Dönem: ${new Date(bas).toLocaleDateString("tr-TR")} - ${new Date(bit).toLocaleDateString("tr-TR")}`;
+                loadPerformans();
+            }
+        });
 
         async function loadPerformans() {
             const bas = localStorage.getItem("baslangic");
             const bit = localStorage.getItem("bitis");
 
-            if (!bas || !bit) return;
-
             try {
                 const response = await fetch(`/api/BekciPerformans?baslangic=${bas}&bitis=${bit}`);
                 const data = await response.json();
 
+                const statusInfo = document.getElementById("statusInfo");
+                const tbody = document.getElementById("perfBody");
+
                 if (!data || data.length === 0) {
-                    document.getElementById("statusInfo").innerText = "Seçilen tarihlerde veri bulunamadı.";
-                    document.getElementById("statusInfo").style.display = "block";
+                    statusInfo.innerText = "Seçilen tarihlerde analiz edilecek bekçi verisi bulunamadı.";
+                    statusInfo.className = "alert alert-warning";
+                    statusInfo.style.display = "block";
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center p-4">Veri yok.</td></tr>';
                     return;
                 }
-                document.getElementById("statusInfo").style.display = "none";
+
+                statusInfo.style.display = "none";
 
                 // 1. Tabloyu Doldur
-                const tbody = document.getElementById("perfBody");
-                tbody.innerHTML = "";
-                data.forEach(item => {
-                    tbody.innerHTML += `<tr>
-                        <td class="fw-bold">${item.bekciAdi}</td>
+                tbody.innerHTML = data.map(item => `
+                    <tr>
+                        <td class="ps-4 fw-bold text-secondary">${item.bekciAdi}</td>
                         <td class="text-center">${item.toplamTur}</td>
-                        <td class="text-center text-success">${item.eksiksizTur}</td>
-                        <td class="text-center text-danger">${item.eksikTur}</td>
-                        <td class="text-center">${item.toplamEksikNokta}</td>
-                        <td class="text-center fw-bold text-primary">%${item.performans}</td>
-                    </tr>`;
-                });
+                        <td class="text-center text-success fw-bold">${item.eksiksizTur}</td>
+                        <td class="text-center text-danger fw-bold">${item.eksikTur}</td>
+                        <td class="text-center"><span class="badge bg-light text-dark border">${item.toplamEksikNokta}</span></td>
+                        <td class="text-center">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <span class="fw-bold text-primary me-2">%${item.performans}</span>
+                                <div class="progress" style="width: 50px; height: 6px;">
+                                    <div class="progress-bar" style="width: ${item.performans}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
 
                 // 2. Grafiği Çiz
                 renderChart(data);
@@ -91,24 +118,33 @@
             }
         }
 
-               function renderChart(data) {
+                function renderChart(data) {
             const ctx = document.getElementById('perfChart').getContext('2d');
             if (myChart) myChart.destroy();
 
-            const colors = data.map((_, index) => `hsl(${(index * 360) / data.length}, 70%, 55%)`);
-            const borderColors = data.map((_, index) => `hsl(${(index * 360) / data.length}, 70%, 40%)`);
+            // 1. Bekçiler için geniş ve canlı bir renk paleti tanımlıyoruz
+            const presetColors = [
+                '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74c3c',
+                '#858796', '#6f42c1', '#fd7e14', '#20c997', '#007bff',
+                '#d63384', '#5a5c69', '#f8f9fc', '#2c3e50', '#e67e22'
+            ];
+
+            // 2. Her bekçiye sırasıyla bir renk atıyoruz
+            const barColors = data.map((_, index) => presetColors[index % presetColors.length]);
 
             myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: data.map(x => x.bekciAdi),
                     datasets: [{
-                        label: 'Başarı Oranı (%)',
+                        label: 'Başarı Oranı',
                         data: data.map(x => x.performans),
-                        backgroundColor: colors,
-                        borderColor: borderColors,
-                        borderWidth: 1,
-                        barThickness: 50
+                        // Buradaki backgroundColor artık her bar için farklı renge sahip
+                        backgroundColor: barColors,
+                        borderRadius: 8,
+                        barThickness: 45,
+                        // Hover durumunda renklerin hafif şeffaflaşması için (Opsiyonel)
+                        hoverBackgroundColor: barColors.map(c => c + 'CC')
                     }]
                 },
                 options: {
@@ -116,48 +152,25 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: { display: false },
-                        tooltip: { enabled: true }
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            color: '#444',
+                            font: { weight: 'bold', size: 12 },
+                            formatter: (value) => '%' + value
+                        }
                     },
                     scales: {
-                        y: { beginAtZero: true, max: 110 } // Üstte biraz boşluk kalsın
-                    },
-                    animation: {
-                        onComplete: function() {
-                            const chartInstance = this;
-                            const ctx = chartInstance.ctx;
-
-                            ctx.font = "bold 14px Arial";
-                            ctx.textAlign = 'center';
-                            ctx.textBaseline = 'middle'; // Dikeyde tam orta
-
-                            this.data.datasets.forEach(function(dataset, i) {
-                                const meta = chartInstance.getDatasetMeta(i);
-                                meta.data.forEach(function(bar, index) {
-                                    const dataValue = dataset.data[index];
-
-                                    // Yazı rengini barın içinde daha net görünmesi için beyaz yapıyoruz
-                                    ctx.fillStyle = '#ffffff';
-
-                                    // bar.y: barın tepe noktası, bar.base: barın alt noktası
-                                    // İkisinin ortasını hesaplayarak metni tam merkeze yazıyoruz
-                                    const centerY = bar.y + (bar.base - bar.y) / 2;
-
-                                    // Eğer performans çok düşükse (%5 gibi) metin barın dışına taşmasın diye kontrol
-                                    if (dataValue > 10) {
-                                        ctx.fillText('%' + dataValue, bar.x, centerY);
-                                    } else {
-                                        // Çok küçük barlarda metni barın hemen üstüne siyah yaz
-                                        ctx.fillStyle = '#000000';
-                                        ctx.fillText('%' + dataValue, bar.x, bar.y - 10);
-                                    }
-                                });
-                            });
-                        }
+                        y: {
+                            beginAtZero: true,
+                            max: 110,
+                            grid: { color: '#f0f0f0' },
+                            ticks: { callback: (value) => '%' + value }
+                        },
+                        x: { grid: { display: false } }
                     }
                 }
             });
         }
-
-        document.addEventListener("DOMContentLoaded", loadPerformans);
     </script>
 }

@@ -1,204 +1,181 @@
 ﻿@page
 @model GuvenlikKontrolWeb.Pages.EksikNoktaModel
 @{
-    ViewData["Title"] = "Eksik Nokta";
+    ViewData["Title"] = "Eksik Nokta Analizi";
 }
 
-<h4>Güvenlik Kontrol Noktası Eksik Nokta Raporu</h4>
-<div id="seciliTarih" class="mb-3 fw-bold"></div>
+<div class="container-fluid animate__animated animate__fadeIn">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="text-danger fw-bold m-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Eksik Kontrol Noktası Raporu</h4>
+        <div id="seciliTarih" class="badge bg-white text-dark border shadow-sm p-2"></div>
+    </div>
 
-<div>
-    <table class="table table-sm table-bordered" id="eksikNoktaTablo">
-        <thead class="table-light">
-            <tr>
-                <th>Tur No</th>
-                <th>Bekçi</th>
-                <th>Kontrol Noktası</th>
-                <th>Tur Başlangıç</th>
-                <th>Tur Bitiş</th>
-                <th>Durum</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr><td colspan="6">Yükleniyor...</td></tr>
-        </tbody>
-    </table>
-</div>
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h6 class="m-0 font-weight-bold text-dark"><i class="bi bi-graph-up-arrow me-2"></i>Günlük Eksik Geçiş Sayıları</h6>
+        </div>
+        <div class="card-body">
+            <div style="width:100%; height:350px;">
+                <canvas id="grafikEksikNokta"></canvas>
+            </div>
+        </div>
+    </div>
 
-<div style="width:100%; height:400px; margin-top:30px;">
-    <canvas id="grafikEksikNokta"></canvas>
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-danger text-white py-3">
+            <h6 class="m-0 font-weight-bold">Atlanan Kontrol Noktası Detayları</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                <table class="table table-hover align-middle mb-0" id="eksikNoktaTablo">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th class="ps-3">Tur No</th>
+                            <th>Bekçi</th>
+                            <th>Kontrol Noktası</th>
+                            <th>Planlanan Zaman</th>
+                            <th class="text-center">Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eksikTableBody">
+                        <tr><td colspan="5" class="text-center p-5 text-muted">Veriler analiz ediliyor...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-
-
     <script>
-        async function eksikNoktaGetir() {
+        // Not: Chart.js ve DataLabels Layout'tan lokal olarak geliyor.
 
+        async function eksikNoktaGetir() {
             const bas = localStorage.getItem("baslangic");
             const bit = localStorage.getItem("bitis");
 
             if (!bas || !bit) {
-                alert("Önce tarih seçip Raporu Getir butonuna basınız!");
+                document.getElementById("eksikTableBody").innerHTML = '<tr><td colspan="5" class="text-center p-5 text-warning">Lütfen sol menüden tarih seçip Raporu Güncelle butonuna basınız!</td></tr>';
                 return;
             }
-             document.getElementById("seciliTarih").innerHTML =
-                `Seçilen Aralık: ${formatDate(bas)} - ${formatDate(bit)}`;
-            const res = await fetch(`/api/TurAnaliz?baslangic=${bas}&bitis=${bit}`);
-            const data = await res.json();
 
-            const beklenenNoktalar = [
-                "İdari Bina","Shring Mak.","Kalite Kontrol","Eski Kazan Yıkama(Vernik)",
-                "Trafo","Pasta Dairesi","Alkid Zemin","Alkid 1.Kat","Alkid 2.Kat",
-                "Kazan Dairesi","İnşaat Su Deposu","İnşaat Arka","İnşaat Üretim Platform",
-                "İnşaat Ambalaj Depo","Atölye"
-            ];
+            document.getElementById("seciliTarih").innerHTML = `📅 Dönem: ${formatDate(bas)} - ${formatDate(bit)}`;
 
-            const eksikList = [];
-            const turGruplar = {};
+            try {
+                const res = await fetch(`/api/TurAnaliz?baslangic=${bas}&bitis=${bit}`);
+                const data = await res.json();
 
-            // Tur bazlı okunan noktaları grupla
-            data.forEach(row => {
-                if (row.satirTipi === "DETAY") {
-                    const key = `${row.turNo}|${row.bekciAdi}`;
-                    if (!turGruplar[key]) turGruplar[key] = [];
-                    turGruplar[key].push(row.kontrolNoktasiAdi);
-                }
-            });
+                // Beklenen noktalar listesi (Sabit)
+                const beklenenNoktalar = [
+                    "İdari Bina","Shring Mak.","Kalite Kontrol","Eski Kazan Yıkama(Vernik)",
+                    "Trafo","Pasta Dairesi","Alkid Zemin","Alkid 1.Kat","Alkid 2.Kat",
+                    "Kazan Dairesi","İnşaat Su Deposu","İnşaat Arka","İnşaat Üretim Platform",
+                    "İnşaat Ambalaj Depo","Atölye"
+                ];
 
-            // Eksik noktaları bul
-            Object.keys(turGruplar).forEach(key => {
+                const eksikList = [];
+                const turGruplar = {};
 
-                const [turNo, bekci] = key.split("|");
-                const okutulan = turGruplar[key];
-
-                beklenenNoktalar.forEach(nokta => {
-
-                    if (!okutulan.includes(nokta)) {
-
-                        const tur = data.find(d => d.turNo == turNo && d.bekciAdi == bekci);
-
-                        eksikList.push({
-                            turNo: turNo,
-                            bekci: bekci,
-                            nokta: nokta,
-                            baslangic: tur ? tur.devriyeZamani : "",
-                            bitis: tur ? tur.devriyeZamani : "",
-                            durum: "Eksik"
-                        });
+                // Veriyi tur bazlı grupla
+                data.forEach(row => {
+                    if ((row.satirTipi || row.SatirTipi) === "DETAY") {
+                        const key = `${row.turNo}|${row.bekciAdi}`;
+                        if (!turGruplar[key]) turGruplar[key] = [];
+                        turGruplar[key].push(row.kontrolNoktasiAdi);
                     }
                 });
-            });
 
-            // === TABLOYU DOLDUR ===
-            const tbody = document.querySelector("#eksikNoktaTablo tbody");
-            tbody.innerHTML = "";
+                // Eksikleri tespit et
+                Object.keys(turGruplar).forEach(key => {
+                    const [turNo, bekci] = key.split("|");
+                    const okutulan = turGruplar[key];
 
-            if (eksikList.length === 0) {
-                tbody.innerHTML = `<tr>
-                    <td colspan="6">Hiç eksik nokta yok, tüm turlar eksiksiz tamamlanmıştır.</td>
-                </tr>`;
-            }
-            else {
-                eksikList.forEach(e => {
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `
-                        <td>${e.turNo}</td>
-                        <td>${e.bekci}</td>
-                        <td>${e.nokta}</td>
-                        <td>${formatDate(e.baslangic)}</td>
-                        <td>${formatDate(e.bitis)}</td>
-                        <td>${e.durum}</td>
-                    `;
-                    tbody.appendChild(tr);
+                    beklenenNoktalar.forEach(nokta => {
+                        if (!okutulan.includes(nokta)) {
+                            const tur = data.find(d => d.turNo == turNo && d.bekciAdi == bekci);
+                            eksikList.push({
+                                turNo: turNo,
+                                bekci: bekci,
+                                nokta: nokta,
+                                zaman: tur ? tur.devriyeZamani : "",
+                                tarih: tur ? tur.devriyeZamani.split("T")[0] : ""
+                            });
+                        }
+                    });
                 });
+
+                renderTable(eksikList);
+                renderChart(eksikList);
+
+            } catch (err) {
+                console.error("Veri çekme hatası:", err);
+            }
+        }
+
+        function renderTable(list) {
+            const tbody = document.getElementById("eksikTableBody");
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center p-5 text-success fw-bold">✅ Harika! Bu dönemde hiç eksik nokta bulunmuyor.</td></tr>';
+                return;
             }
 
-            // === GRAFİK ===
+            tbody.innerHTML = list.map(e => `
+                <tr>
+                    <td class="ps-3 fw-bold">#${e.turNo}</td>
+                    <td><i class="bi bi-person me-2"></i>${e.bekci}</td>
+                    <td class="text-danger fw-bold">${e.nokta}</td>
+                    <td class="text-muted small">${formatDate(e.zaman)}</td>
+                    <td class="text-center"><span class="badge bg-danger">EKSİK</span></td>
+                </tr>
+            `).join('');
+        }
 
-            // Tarih bilgisini normalize et
-            eksikList.forEach(e => {
-                e.tarih = e.baslangic ? e.baslangic.split("T")[0] : "";
-            });
-
+        function renderChart(eksikList) {
             const tarihler = [...new Set(eksikList.map(e => e.tarih))].sort();
             const bekciler = [...new Set(eksikList.map(e => e.bekci))];
 
-            const renkler = [
-                'rgba(255, 99, 132, 0.7)',
-                'rgba(54, 162, 235, 0.7)',
-                'rgba(255, 206, 86, 0.7)',
-                'rgba(75, 192, 192, 0.7)',
-                'rgba(153, 102, 255, 0.7)'
-            ];
+            // Yüksek kontrastlı profesyonel renkler
+            const renkPaleti = ['#e74c3c', '#3498db', '#f1c40f', '#9b59b6', '#1abc9c', '#e67e22'];
 
             const datasets = bekciler.map((bekci, index) => {
-
-                const dataSet = tarihler.map(tarih => {
-                    return eksikList.filter(e =>
-                        e.bekci === bekci && e.tarih === tarih
-                    ).length;
-                });
-
                 return {
                     label: bekci,
-                    data: dataSet,
-                    backgroundColor: renkler[index % renkler.length]
+                    data: tarihler.map(t => eksikList.filter(e => e.bekci === bekci && e.tarih === t).length),
+                    backgroundColor: renkPaleti[index % renkPaleti.length],
+                    borderRadius: 5
                 };
             });
 
             const ctx = document.getElementById('grafikEksikNokta').getContext('2d');
-
             if (window.eksikChart) window.eksikChart.destroy();
 
-                    window.eksikChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: tarihler,
-                datasets: datasets
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { stepSize: 1 }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'bottom'   // 👈 Bekçi isimleri grafiğin altında
-                    },
-                    title: {
-                        display: true,
-                        text: 'Tarih Bazlı Bekçi Eksik Nokta Analizi'
-                    },
-                    datalabels: {
-                        color: 'white',
-                        anchor: 'center',
-                        align: 'center',
-                        font: {
-                            weight: 'bold'
-                        },
-                        formatter: function(value) {
-                            return value > 0 ? value : '';
+            window.eksikChart = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: tarihler.map(t => new Date(t).toLocaleDateString("tr-TR")), datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        datalabels: {
+                            color: '#fff',
+                            font: { weight: 'bold' },
+                            formatter: (v) => v > 0 ? v : ''
                         }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                        x: { grid: { display: false } }
                     }
                 }
-            },
-            plugins: [ChartDataLabels]  // 👈 Çubuk içi yazılar için gerekli
-        });
-
+            });
         }
 
-        // Tarih formatı düzeltme
         function formatDate(dateString) {
-            if (!dateString) return "";
-            const d = new Date(dateString);
-            return d.toLocaleString("tr-TR");
+            if (!dateString) return "-";
+            return new Date(dateString).toLocaleString("tr-TR", {
+                day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
         }
 
         document.addEventListener("DOMContentLoaded", eksikNoktaGetir);

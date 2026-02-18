@@ -1,33 +1,47 @@
 ﻿@page
 @model GuvenlikKontrolWeb.Pages.TurAnalizModel
 @{
-    ViewData["Title"] = "Tur Analiz";
+    ViewData["Title"] = "Tur Analiz Raporu";
 }
 
-<div class="container-fluid shadow-sm p-3 mb-5 bg-body rounded">
-    <h2 class="text-primary border-bottom pb-2">🕵️ Tur Analiz Raporu</h2>
-    <div id="seciliTarih" class="mb-3 fw-bold text-muted"></div>
+<div class="container-fluid animate__animated animate__fadeIn">
+    <div class="d-flex justify-content-between align-items-center shadow-sm p-3 mb-4 bg-white rounded border-start border-primary border-5">
+        <div>
+            <h2 class="text-primary fw-bold m-0">🕵️ Tur Analiz Raporu</h2>
+            <div id="seciliTarih" class="small fw-bold text-muted mt-1"></div>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-primary">Detaylı İnceleme</span>
+        </div>
+    </div>
 
-    <div class="table-responsive">
-        <table class="table table-hover table-bordered border-primary">
-            <thead class="table-dark">
-                <tr>
-                    <th>Tarih</th>
-                    <th>Tur No</th>
-                    <th>Sıra</th>
-                    <th>Bekçi</th>
-                    <th>Kontrol Noktası</th>
-                    <th>Devriye Saati</th>
-                    <th>İki Nokta Arası</th>
-                    <th>İki Tur Arası</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-                <tr>
-                    <td colspan="8" class="text-center">Veri hazırlanıyor...</td>
-                </tr>
-            </tbody>
-        </table>
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 75vh; overflow-y: auto;">
+                <table class="table table-hover table-bordered mb-0" id="analizTable">
+                    <thead class="table-dark sticky-top">
+                        <tr>
+                            <th style="min-width: 100px;">Tarih</th>
+                            <th class="text-center">Tur No</th>
+                            <th class="text-center">Sıra</th>
+                            <th>Bekçi</th>
+                            <th>Kontrol Noktası</th>
+                            <th class="text-center">Devriye Saati</th>
+                            <th class="text-center">Nokta Arası</th>
+                            <th class="text-center">Tur Arası Duraklama</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="8" class="text-center p-5">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <div class="mt-2">Veriler analiz ediliyor...</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -44,68 +58,76 @@
             const seciliTarihDiv = document.getElementById("seciliTarih");
 
             if (!cachedData || cachedData === "[]") {
-                if(seciliTarihDiv) seciliTarihDiv.innerHTML = `<span class="text-danger">⚠️ Veri Hazır Değil!</span>`;
-                tableBody.innerHTML = `<tr><td colspan="8" class="text-center p-4">Lütfen sol menüdeki <b>"Raporu Güncelle"</b> butonuna basarak verileri hazırlayın.</td></tr>`;
+                seciliTarihDiv.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-circle me-1"></i> Veri Hazır Değil!</span>`;
+                tableBody.innerHTML = `<tr><td colspan="8" class="text-center p-5 text-muted">Lütfen sol menüdeki <b>"Raporu Güncelle"</b> butonuna basarak verileri hazırlayın.</td></tr>`;
                 return;
             }
 
-            if(seciliTarihDiv) seciliTarihDiv.innerHTML = `📅 Dönem: ${formatDate(bas)} - ${formatDate(bit)}`;
+            seciliTarihDiv.innerHTML = `<i class="bi bi-calendar3 me-1"></i> Dönem: ${formatDate(bas)} - ${formatDate(bit)}`;
 
             try {
                 const data = JSON.parse(cachedData);
 
-                // 1. SIRALAMA (Küçükten Büyüye)
+                // 1. Gelişmiş Sıralama
                 data.sort((a, b) => {
-                    if (a.turNo !== b.turNo) return a.turNo - b.turNo;
-                    if (a.satirTipi === "TOPLAM") return 1;
-                    if (b.satirTipi === "TOPLAM") return -1;
-                    return a.turIciNo - b.turIciNo;
+                    const turA = a.turNo || a.TurNo;
+                    const turB = b.turNo || b.TurNo;
+                    if (turA !== turB) return turA - turB;
+
+                    const tipA = a.satirTipi || a.SatirTipi;
+                    const tipB = b.satirTipi || b.SatirTipi;
+                    if (tipA === "TOPLAM") return 1;
+                    if (tipB === "TOPLAM") return -1;
+
+                    const siraA = a.turIciNo || a.TurIciNo;
+                    const siraB = b.turIciNo || b.TurIciNo;
+                    return siraA - siraB;
                 });
 
-                // 2. VERİ BİRLEŞTİRME (En hızlı ve güvenli yol)
+                // 2. Satır Oluşturma
                 let rowsHtml = "";
 
                 data.forEach(row => {
-                            // TurAnaliz.cshtml içindeki döngüde Toplam satırı kısmı
-        if (row.satirTipi === "TOPLAM") {
-            rowsHtml += `
-                <tr style="background-color:#fff9c4; font-weight:bold; border-top: 2px solid #dee2e6;">
-                    <td></td>
-                    <td class="text-center">${row.turNo}</td>
-                    <td colspan="2"></td>
-                    <td class="text-primary text-center">TUR ${row.turNo} TOPLAM ÖZETİ</td>
-                    <td></td>
-                    <td class="text-center text-success">${formatDuration(row.turToplamSn)}</td>
-                    <td class="text-center text-danger">
-                        ${row.ikiTurArasiSn > 0 ? formatDuration(row.ikiTurArasiSn) : '---'}
-                    </td>
-                </tr>`;
-        }
-                     else {
+                    const sTipi = row.satirTipi || row.SatirTipi;
+                    const tNo = row.turNo || row.TurNo;
+
+                    if (sTipi === "TOPLAM") {
+                        rowsHtml += `
+                            <tr class="table-warning fw-bold border-top-2">
+                                <td></td>
+                                <td class="text-center">${tNo}</td>
+                                <td colspan="2"></td>
+                                <td class="text-primary"><i class="bi bi-flag-fill me-2"></i>TUR ${tNo} ÖZETİ</td>
+                                <td></td>
+                                <td class="text-center text-success">${formatDuration(row.turToplamSn || row.TurToplamSn)}</td>
+                                <td class="text-center text-danger bg-light">
+                                    ${(row.ikiTurArasiSn || row.IkiTurArasiSn) > 0 ? formatDuration(row.ikiTurArasiSn || row.IkiTurArasiSn) : '---'}
+                                </td>
+                            </tr>`;
+                    } else {
                         rowsHtml += `
                             <tr>
-                                <td>${formatOnlyDate(row.operasyonGunu)}</td>
-                                <td class="text-center">${row.turNo ?? ''}</td>
-                                <td class="text-center">${row.turIciNo ?? ''}</td>
-                                <td>${row.bekciAdi ?? ''}</td>
-                                <td>${row.kontrolNoktasiAdi ?? ''}</td>
-                                <td class="text-center">${formatOnlyTime(row.devriyeZamani)}</td>
-                                <td class="text-center">${formatDuration(row.ikiNoktaArasiSn)}</td>
-                                <td></td>
+                                <td class="small">${formatOnlyDate(row.operasyonGunu || row.OperasyonGunu)}</td>
+                                <td class="text-center">${tNo ?? ''}</td>
+                                <td class="text-center text-muted">${row.turIciNo || row.TurIciNo || ''}</td>
+                                <td><i class="bi bi-person small me-1"></i>${row.bekciAdi || row.BekciAdi || ''}</td>
+                                <td>${row.kontrolNoktasiAdi || row.KontrolNoktasiAdi || ''}</td>
+                                <td class="text-center fw-bold">${formatOnlyTime(row.devriyeZamani || row.DevriyeZamani)}</td>
+                                <td class="text-center">${formatDuration(row.ikiNoktaArasiSn || row.IkiNoktaArasiSn)}</td>
+                                <td class="bg-light text-center">-</td>
                             </tr>`;
                     }
                 });
 
-                // 3. TEK SEFERDE DOM'A BASMA
                 tableBody.innerHTML = rowsHtml;
 
             } catch (err) {
                 console.error("Veri işleme hatası:", err);
-                tableBody.innerHTML = `<tr><td colspan="8" class="text-danger text-center">Veri okunurken hata oluştu.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="8" class="text-danger text-center p-4">Veri işleme hatası: ${err.message}</td></tr>`;
             }
         }
 
-        // YARDIMCI FONKSİYONLAR
+        // Yardımcı Fonksiyonlar (Aynı Kalıyor)
         function formatDuration(seconds) {
             if (!seconds || seconds <= 0) return "00:00:00";
             const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
@@ -123,7 +145,7 @@
         function formatOnlyTime(dateStr) {
             if(!dateStr) return "-";
             const d = new Date(dateStr);
-            return isNaN(d) ? "-" : d.toLocaleTimeString('tr-TR', { hour12: false });
+            return isNaN(d) ? "-" : d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
 
         function formatDate(dateStr) {

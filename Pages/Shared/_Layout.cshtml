@@ -1,0 +1,223 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Güvenlik Tur Sistemi</title>
+
+    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="~/css/site.css" rel="stylesheet" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <style>
+        body {
+            overflow-x: hidden;
+            background-color: #f4f7f6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        /* Sidebar Tasarımı */
+        .sidebar {
+            width: 260px;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #1a2a6c 0%, #203a43 50%, #2c5364 100%);
+            color: white;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+            .sidebar .nav-link {
+                color: rgba(255,255,255,0.7);
+                padding: 12px 20px;
+                margin: 4px 12px;
+                border-radius: 10px;
+                transition: all 0.2s;
+                text-decoration: none;
+                display: block;
+                font-weight: 500;
+            }
+
+                .sidebar .nav-link:hover {
+                    background: rgba(255,255,255,0.1);
+                    color: #00d2ff;
+                    transform: translateX(5px);
+                }
+
+                .sidebar .nav-link.active {
+                    background: #00d2ff;
+                    color: white;
+                    box-shadow: 0 4px 15px rgba(0,210,255,0.4);
+                }
+
+        /* Filtre ve Export Alanları */
+        .filter-section {
+            padding: 1.2rem;
+            background: rgba(255,255,255,0.08);
+            margin: 15px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+            .filter-section h6 {
+                color: #00d2ff;
+                font-size: 0.85rem;
+                text-transform: uppercase;
+                margin-bottom: 1rem;
+                letter-spacing: 1px;
+            }
+
+        .content-area {
+            flex: 1;
+            padding: 2rem;
+            min-width: 0;
+        }
+
+        .form-control-sm {
+            font-size: 0.8rem;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="d-flex">
+        <div class="sidebar border-end">
+            <div class="p-4 border-bottom text-center">
+                <h5 class="m-0 fw-bold" style="color: #00d2ff;">GÜVENLİK TUR</h5>
+                <small class="text-white-50">Yönetim Paneli v2.5</small>
+            </div>
+
+            <ul class="nav flex-column mb-3 mt-3">
+                <li><a class="nav-link" href="/Index"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
+                <li><a class="nav-link" href="/TurAnaliz"><i class="bi bi-search me-2"></i> Tur Analizi</a></li>
+                <li><a class="nav-link" href="#" onclick="gitEksikNokta()"><i class="bi bi-exclamation-triangle me-2"></i> Eksik Nokta</a></li>
+                <li><a class="nav-link" href="/GunlukTur"><i class="bi bi-calendar3 me-2"></i> Günlük Tur</a></li>
+                <li><a class="nav-link" href="/BekciPerformans"><i class="bi bi-star me-2"></i> Bekçi Performansı</a></li>
+            </ul>
+
+            <div class="filter-section">
+                <h6><i class="bi bi-filter-left me-1"></i> Zaman Aralığı</h6>
+                <div class="mb-2">
+                    <label class="text-white-50 small">Başlangıç</label>
+                    <input type="datetime-local" id="menuBas" class="form-control form-control-sm bg-dark text-white border-0" />
+                </div>
+                <div class="mb-2">
+                    <label class="text-white-50 small">Bitiş</label>
+                    <input type="datetime-local" id="menuBit" class="form-control form-control-sm bg-dark text-white border-0" />
+                </div>
+                <button type="button" id="btnRapor" onclick="raporuGetir()" class="btn btn-info btn-sm w-100 text-white fw-bold shadow-sm mt-2">
+                    <i class="bi bi-arrow-repeat me-1"></i> Raporu Güncelle
+                </button>
+            </div>
+
+            <div class="filter-section">
+                <h6><i class="bi bi-download me-1"></i> Dışa Aktar</h6>
+                <button onclick="exportToExcel()" class="btn btn-success btn-sm w-100 mb-2 shadow-sm text-start">
+                    <i class="bi bi-file-earmark-excel me-2"></i> Excel (.xlsx)
+                </button>
+                <button onclick="exportToPDF()" class="btn btn-danger btn-sm w-100 shadow-sm text-start">
+                    <i class="bi bi-file-earmark-pdf me-2"></i> PDF (.pdf)
+                </button>
+            </div>
+        </div>
+
+        <div class="content-area">
+            @RenderBody()
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+        // ChartDataLabels kaydı
+        if (typeof ChartDataLabels !== 'undefined') {
+            Chart.register(ChartDataLabels);
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Aktif link işaretleme (Path ve Query String kontrolü ile)
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                if (link.getAttribute('href') === currentPath ||
+                   (currentPath === "/" && link.getAttribute('href') === "/Index")) {
+                    link.classList.add('active');
+                }
+            });
+
+            // Inputları temizle veya hafızadan getir
+            document.getElementById("menuBas").value = localStorage.getItem("baslangic") || "";
+            document.getElementById("menuBit").value = localStorage.getItem("bitis") || "";
+        });
+
+        async function raporuGetir() {
+            const bas = document.getElementById("menuBas").value;
+            const bit = document.getElementById("menuBit").value;
+
+            if (!bas || !bit) return alert("⚠️ Lütfen başlangıç ve bitiş tarihlerini seçiniz!");
+
+            const btn = document.getElementById("btnRapor");
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Analiz Ediliyor...';
+
+            try {
+                // API URL'sini ve parametrelerini kontrol et
+                const res = await fetch(`/api/TurAnaliz?baslangic=${encodeURIComponent(bas)}&bitis=${encodeURIComponent(bit)}`);
+                if (!res.ok) throw new Error("Veri çekilemedi!");
+
+                const data = await res.json();
+
+                // Verileri kaydet
+                localStorage.setItem("baslangic", bas);
+                localStorage.setItem("bitis", bit);
+                sessionStorage.setItem("turData", JSON.stringify(data));
+
+                // Kullanıcıyı Dashboard'a (Index) yönlendir
+                // Dashboard sayfasında veriler sessionStorage'dan otomatik okunacak
+                window.location.href = "/Index";
+
+            } catch (err) {
+                console.error("Hata:", err);
+                alert("❌ Veri getirilirken bir hata oluştu. Lütfen bağlantınızı kontrol edin.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Raporu Güncelle';
+            }
+        }
+
+        function gitEksikNokta() {
+            if (!sessionStorage.getItem("turData")) {
+                alert("🔍 Dashboard verisi bulunamadı. Lütfen önce 'Raporu Güncelle' butonuna basınız.");
+                return;
+            }
+            window.location.href = "/EksikNokta";
+        }
+
+        function exportToExcel() {
+            const table = document.querySelector("table");
+            if (!table) return alert("❌ Aktarılacak veri tablosu bulunamadı! Lütfen bir rapor sayfası açın.");
+            const wb = XLSX.utils.table_to_book(table, { sheet: "Guvenlik_Tur_Raporu" });
+            XLSX.writeFile(wb, `Tur_Raporu_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        function exportToPDF() {
+            const element = document.querySelector(".content-area");
+            if (!element) return;
+            const opt = {
+                margin: 0.3,
+                filename: 'Guvenlik_Tur_Analizi.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

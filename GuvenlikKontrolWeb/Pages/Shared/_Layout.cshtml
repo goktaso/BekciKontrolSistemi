@@ -9,6 +9,7 @@
         body {
             overflow-x: hidden;
             background-color: #f4f7f6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         /* Sidebar Tasarımı */
         .sidebar {
@@ -17,6 +18,8 @@
             background: linear-gradient(180deg, #1a2a6c 0%, #203a43 50%, #2c5364 100%);
             color: white;
             box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+            position: sticky;
+            top: 0;
         }
 
             .sidebar .nav-link {
@@ -41,6 +44,7 @@
                     color: white;
                     box-shadow: 0 4px 15px rgba(0,210,255,0.4);
                 }
+
         /* Filtre ve Export Alanları */
         .filter-section {
             padding: 1.2rem;
@@ -62,17 +66,23 @@
             flex: 1;
             padding: 2rem;
         }
+
+        /* Form Elemanları Özelleştirme */
+        .form-control-sm {
+            font-size: 0.8rem;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
     <div class="d-flex">
         <div class="sidebar border-end">
-            <div class="p-3 border-bottom text-center">
+            <div class="p-4 border-bottom text-center">
                 <h5 class="m-0 fw-bold" style="color: #00d2ff;">GÜVENLİK TUR</h5>
-                <small class="text-white-50">Kontrol Paneli</small>
+                <small class="text-white-50">Kontrol Paneli v2.0</small>
             </div>
 
-            <ul class="nav flex-column mb-3">
+            <ul class="nav flex-column mb-3 mt-3">
                 <li><a class="nav-link" href="/Dashboard">📊 Dashboard</a></li>
                 <li><a class="nav-link" href="/TurAnaliz">🕵️ Tur Analizi</a></li>
                 <li><a class="nav-link" href="#" onclick="gitEksikNokta()">⚠️ Eksik Nokta</a></li>
@@ -91,17 +101,17 @@
                     <input type="datetime-local" id="menuBit" class="form-control form-control-sm bg-dark text-white border-0" />
                 </div>
                 <button type="button" id="btnRapor" onclick="raporuGetir()" class="btn btn-info btn-sm w-100 text-white fw-bold shadow-sm mt-2">
-                    Raporu Güncelle
+                    🔄 Raporu Güncelle
                 </button>
             </div>
 
             <div class="filter-section">
                 <h6>Dışa Aktar</h6>
                 <button onclick="exportToExcel()" class="btn btn-success btn-sm w-100 mb-2 shadow-sm">
-                    📊 Excel (.xlsx)
+                    🟢 Excel (.xlsx)
                 </button>
                 <button onclick="exportToPDF()" class="btn btn-danger btn-sm w-100 shadow-sm">
-                    📕 PDF (.pdf)
+                    🔴 PDF (.pdf)
                 </button>
             </div>
         </div>
@@ -116,76 +126,91 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <script>
-        // Sayfa yüklendiğinde tarihleri ve aktif menüyü ayarla
         document.addEventListener("DOMContentLoaded", function () {
+            // Aktif linki işaretle
             const currentPath = window.location.pathname;
             document.querySelectorAll('.sidebar .nav-link').forEach(link => {
                 if (link.getAttribute('href') === currentPath) link.classList.add('active');
             });
+
+            // Inputları hafızadaki tarihlerle doldur
             document.getElementById("menuBas").value = localStorage.getItem("baslangic") || "";
             document.getElementById("menuBit").value = localStorage.getItem("bitis") || "";
         });
 
-        // Rapor Getirme Fonksiyonu
+        
+                // HESAPLAMA YAPAN VE YÖNLENDİREN TEK YETKİLİ FONKSİYON
                async function raporuGetir() {
             const bas = document.getElementById("menuBas").value;
             const bit = document.getElementById("menuBit").value;
+
             if (!bas || !bit) return alert("Lütfen tarih seçiniz!");
 
             const btn = document.getElementById("btnRapor");
-            btn.disabled = true; btn.innerText = "Sorgulanıyor...";
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Veriler İşleniyor...';
 
             try {
-                // SQL'den veriyi çek
+                // 1. Veriyi çek
                 const res = await fetch(`/api/TurAnaliz?baslangic=${bas}&bitis=${bit}`);
+                if (!res.ok) throw new Error("Sunucu hatası!");
                 const data = await res.json();
 
-                // Veriyi ve tarihleri belleğe kaydet
+                // 2. Hafızaya yaz
                 localStorage.setItem("baslangic", bas);
                 localStorage.setItem("bitis", bit);
-                sessionStorage.setItem("turData", JSON.stringify(data)); // BURASI KRİTİK
+                sessionStorage.setItem("turData", JSON.stringify(data));
 
-                alert("✅ Veriler güncellendi. Menüden raporları inceleyebilirsiniz.");
+                // 3. KRİTİK ADIM: Kısa bir gecikme ekleyerek tarayıcının veriyi mühürlemesine izin ver
+                // Bu sayede yönlendirme yapıldığında veri %100 hazır olur.
+                await new Promise(resolve => setTimeout(resolve, 800));
 
-                // Eğer zaten Tur Analizi sayfasındaysak verilerin anlık değişmesi için:
-                if(window.location.pathname === "/TurAnaliz") {
-                    location.reload();
+                // 4. Veri doğrulama (Hafızaya gerçekten yazıldı mı?)
+                if (sessionStorage.getItem("turData")) {
+                    alert("✅ Veriler başarıyla analiz edildi ve raporlar hazırlandı.");
+                    window.location.href = "/Dashboard";
+                } else {
+                    throw new Error("Veri yazma hatası!");
                 }
+
             } catch (err) {
-                alert("Sorgu sırasında hata oluştu!");
+                console.error("Hata:", err);
+                alert("❌ İşlem sırasında bir sorun oluştu.");
             } finally {
-                btn.disabled = false; btn.innerText = "Raporu Güncelle";
+                btn.disabled = false;
+                btn.innerText = "🔄 Raporu Güncelle";
             }
         }
 
-        // Eksik Nokta Sayfasına Gitme
         function gitEksikNokta() {
-            if (!localStorage.getItem("baslangic")) return alert("Önce raporu güncellemelisiniz!");
+            if (!sessionStorage.getItem("turData")) return alert("Önce 'Raporu Güncelle' butonuna basmalısınız!");
             window.location.href = "/EksikNokta";
         }
 
-        // Export Fonksiyonları
+        // Export İşlemleri
         function exportToExcel() {
             const table = document.querySelector("table");
-            if (!table) return alert("Aktarılacak tablo bulunamadı!");
-            const wb = XLSX.utils.table_to_book(table, { sheet: "Rapor" });
-            XLSX.writeFile(wb, "Guvenlik_Raporu_" + new Date().toLocaleDateString() + ".xlsx");
+            if (!table) return alert("Aktarılacak veri bulunamadı. Lütfen önce raporu görüntüleyin.");
+
+            const wb = XLSX.utils.table_to_book(table, { sheet: "GuvenlikRaporu" });
+            XLSX.writeFile(wb, `Rapor_${new Date().toLocaleDateString()}.xlsx`);
         }
 
         function exportToPDF() {
             const element = document.querySelector(".content-area");
+            if (!element) return;
+
             const opt = {
-                margin: 0.3,
-                filename: 'Rapor.pdf',
+                margin: 0.2,
+                filename: 'Guvenlik_Tur_Raporu.pdf',
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
+                html2canvas: { scale: 2, useCORS: true },
                 jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
             html2pdf().set(opt).from(element).save();
         }
     </script>
 
-    @* ALT SAYFALARDAN GELEN SCRIPTLERİN ÇALIŞMASI İÇİN KRİTİK SATIR *@
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

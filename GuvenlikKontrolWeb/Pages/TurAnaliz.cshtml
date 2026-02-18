@@ -33,68 +33,56 @@
 
 @section Scripts {
     <script>
-        async function loadTurAnaliz() {
+        document.addEventListener("DOMContentLoaded", loadTurAnaliz);
+
+        function loadTurAnaliz() {
             const bas = localStorage.getItem("baslangic");
             const bit = localStorage.getItem("bitis");
-
-            // ÖNEMLİ: Daha önce çekilmiş veriyi kontrol et (sessionStorage)
             const cachedData = sessionStorage.getItem("turData");
 
-            if (!bas || !bit) {
-                document.getElementById("seciliTarih").innerHTML = "Lütfen tarih seçimi yapınız.";
-                document.getElementById("tableBody").innerHTML = `<tr><td colspan="8" class="text-center">Veri bulunamadı.</td></tr>`;
+            const tableBody = document.getElementById("tableBody");
+            const seciliTarihDiv = document.getElementById("seciliTarih");
+
+            if (!cachedData || cachedData === "[]") {
+                if(seciliTarihDiv) seciliTarihDiv.innerHTML = `<span class="text-danger">⚠️ Veri Hazır Değil!</span>`;
+                tableBody.innerHTML = `<tr><td colspan="8" class="text-center p-4">Lütfen sol menüdeki <b>"Raporu Güncelle"</b> butonuna basarak verileri hazırlayın.</td></tr>`;
                 return;
             }
 
-            document.getElementById("seciliTarih").innerHTML = `📅 Seçilen Aralık: ${formatDate(bas)} - ${formatDate(bit)}`;
+            if(seciliTarihDiv) seciliTarihDiv.innerHTML = `📅 Dönem: ${formatDate(bas)} - ${formatDate(bit)}`;
 
             try {
-                let data;
+                const data = JSON.parse(cachedData);
 
-                // DEĞİŞİKLİK 1: Tekrar hesaplama yapmaması için hafızayı kontrol et
-                if (cachedData && cachedData !== "[]") {
-                    console.log("Veriler hafızadan getirildi (Hesaplama tekrar edilmedi).");
-                    data = JSON.parse(cachedData);
-                } else {
-                    console.log("Hafızada veri yok, API sorgusu başlatılıyor...");
-                    const response = await fetch(`/api/TurAnaliz?baslangic=${bas}&bitis=${bit}`);
-                    if (!response.ok) throw new Error("API Hatası");
-                    data = await response.json();
-
-                    // Veriyi hafızaya al (Bir sonraki basışta buradan okuyacak)
-                    sessionStorage.setItem("turData", JSON.stringify(data));
-                }
-
-                const tableBody = document.getElementById("tableBody");
-                tableBody.innerHTML = "";
-
-                if (!data || data.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="8" class="text-center">Veri bulunamadı.</td></tr>`;
-                    return;
-                }
-
-                // DEĞİŞİKLİK 2: Toplam satırının turun sonunda çıkması için sıralama
+                // 1. SIRALAMA (Küçükten Büyüye)
                 data.sort((a, b) => {
                     if (a.turNo !== b.turNo) return a.turNo - b.turNo;
-                    // Detayları (A) üstte, Toplamları (T) altta göster (T > D olduğu için alfabetik ters mantık)
-                    return a.satirTipi === "TOPLAM" ? 1 : -1;
+                    if (a.satirTipi === "TOPLAM") return 1;
+                    if (b.satirTipi === "TOPLAM") return -1;
+                    return a.turIciNo - b.turIciNo;
                 });
 
+                // 2. VERİ BİRLEŞTİRME (En hızlı ve güvenli yol)
+                let rowsHtml = "";
+
                 data.forEach(row => {
-                    if (row.satirTipi === "TOPLAM") {
-                        // TOPLAM SATIRI GÖRSELİ
-                        tableBody.innerHTML += `
-                            <tr style="background-color:#fff9c4; font-weight:bold; border-top: 2px solid #000;">
-                                <td class="text-end" colspan="4">🏁</td>
-                                <td class="text-primary text-center">TUR ${row.turNo} ÖZETİ</td>
-                                <td></td>
-                                <td class="text-success">${formatDuration(row.turToplamSn)}</td>
-                                <td class="text-danger">${formatDuration(row.ikiTurArasiSn)}</td>
-                            </tr>
-                        `;
-                    } else {
-                        // DETAY SATIRI
-                        tableBody.innerHTML += `
+                            // TurAnaliz.cshtml içindeki döngüde Toplam satırı kısmı
+        if (row.satirTipi === "TOPLAM") {
+            rowsHtml += `
+                <tr style="background-color:#fff9c4; font-weight:bold; border-top: 2px solid #dee2e6;">
+                    <td></td>
+                    <td class="text-center">${row.turNo}</td>
+                    <td colspan="2"></td>
+                    <td class="text-primary text-center">TUR ${row.turNo} TOPLAM ÖZETİ</td>
+                    <td></td>
+                    <td class="text-center text-success">${formatDuration(row.turToplamSn)}</td>
+                    <td class="text-center text-danger">
+                        ${row.ikiTurArasiSn > 0 ? formatDuration(row.ikiTurArasiSn) : '---'}
+                    </td>
+                </tr>`;
+        }
+                     else {
+                        rowsHtml += `
                             <tr>
                                 <td>${formatOnlyDate(row.operasyonGunu)}</td>
                                 <td class="text-center">${row.turNo ?? ''}</td>
@@ -104,18 +92,20 @@
                                 <td class="text-center">${formatOnlyTime(row.devriyeZamani)}</td>
                                 <td class="text-center">${formatDuration(row.ikiNoktaArasiSn)}</td>
                                 <td></td>
-                            </tr>
-                        `;
+                            </tr>`;
                     }
                 });
 
+                // 3. TEK SEFERDE DOM'A BASMA
+                tableBody.innerHTML = rowsHtml;
+
             } catch (err) {
-                console.error(err);
-                document.getElementById("tableBody").innerHTML = `<tr><td colspan="8" class="text-danger text-center">Hata: ${err.message}</td></tr>`;
+                console.error("Veri işleme hatası:", err);
+                tableBody.innerHTML = `<tr><td colspan="8" class="text-danger text-center">Veri okunurken hata oluştu.</td></tr>`;
             }
         }
 
-        // Yardımcı Fonksiyonlar
+        // YARDIMCI FONKSİYONLAR
         function formatDuration(seconds) {
             if (!seconds || seconds <= 0) return "00:00:00";
             const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
@@ -127,20 +117,19 @@
         function formatOnlyDate(dateStr) {
             if(!dateStr) return "-";
             const d = new Date(dateStr);
-            return d.toLocaleDateString('tr-TR');
+            return isNaN(d) ? "-" : d.toLocaleDateString('tr-TR');
         }
 
         function formatOnlyTime(dateStr) {
             if(!dateStr) return "-";
             const d = new Date(dateStr);
-            return d.toLocaleTimeString('tr-TR', { hour12: false });
+            return isNaN(d) ? "-" : d.toLocaleTimeString('tr-TR', { hour12: false });
         }
 
         function formatDate(dateStr) {
+            if(!dateStr) return "-";
             const d = new Date(dateStr);
-            return d.toLocaleString('tr-TR');
+            return isNaN(d) ? "-" : d.toLocaleString('tr-TR');
         }
-
-        document.addEventListener("DOMContentLoaded", loadTurAnaliz);
     </script>
 }

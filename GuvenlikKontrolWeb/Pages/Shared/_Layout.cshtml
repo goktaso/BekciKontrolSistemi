@@ -15,15 +15,22 @@
             background-color: #f4f7f6;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
+        #wrapper {
+            display: flex;
+            width: 100%;
+            transition: all 0.3s;
+        }
+
         /* Sidebar Tasarımı */
         .sidebar {
             width: 260px;
+            min-width: 260px;
             min-height: 100vh;
             background: linear-gradient(180deg, #1a2a6c 0%, #203a43 50%, #2c5364 100%);
             color: white;
             box-shadow: 4px 0 15px rgba(0,0,0,0.3);
-            position: sticky;
-            top: 0;
+            transition: all 0.3s;
             z-index: 1000;
         }
 
@@ -50,6 +57,18 @@
                     box-shadow: 0 4px 15px rgba(0,210,255,0.4);
                 }
 
+        /* Mobil Header (Hamburger Butonu İçin) */
+        .mobile-top-bar {
+            display: none;
+            background: #1a2a6c;
+            color: white;
+            padding: 10px 15px;
+            position: sticky;
+            top: 0;
+            z-index: 1001;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
         /* Filtre ve Export Alanları */
         .filter-section {
             padding: 1.2rem;
@@ -71,17 +90,56 @@
             flex: 1;
             padding: 2rem;
             min-width: 0;
+            transition: all 0.3s;
         }
 
         .form-control-sm {
             font-size: 0.8rem;
             border-radius: 8px;
         }
+
+        /* RESPONSIVE DÜZENLEMER - Build Hatasını Önleyen Güvenli Yazım */
+        @Html.Raw("@media") (max-width: 992px) {
+            .sidebar
+
+        {
+            margin-left: -260px;
+            position: fixed;
+        }
+
+        #wrapper.toggled .sidebar {
+            margin-left: 0;
+        }
+
+        .mobile-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-area {
+            padding: 1rem;
+        }
+        /* Menü açıkken arka planı hafif karartma */
+        #wrapper.toggled .content-area {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        }
     </style>
 </head>
 <body>
-    <div class="d-flex">
-        <div class="sidebar border-end">
+    <div class="mobile-top-bar">
+        <button class="btn btn-outline-light btn-sm" id="menu-toggle">
+            <i class="bi bi-list fs-4"></i>
+        </button>
+        <span class="fw-bold" style="color: #00d2ff;">GÜVENLİK TUR</span>
+        <div style="width: 40px;"></div>
+    </div>
+
+    <div class="d-flex" id="wrapper">
+        <div class="sidebar border-end shadow">
             <div class="p-4 border-bottom text-center">
                 <h5 class="m-0 fw-bold" style="color: #00d2ff;">GÜVENLİK TUR</h5>
                 <small class="text-white-50">Yönetim Paneli v2.5</small>
@@ -110,7 +168,7 @@
                 </button>
             </div>
 
-            <div class="filter-section">
+            <div class="filter-section mb-5">
                 <h6><i class="bi bi-download me-1"></i> Dışa Aktar</h6>
                 <button onclick="exportToExcel()" class="btn btn-success btn-sm w-100 mb-2 shadow-sm text-start">
                     <i class="bi bi-file-earmark-excel me-2"></i> Excel (.xlsx)
@@ -134,13 +192,27 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <script>
-        // ChartDataLabels kaydı
+        // Hamburger Menü Kontrolü
+        $(document).ready(function() {
+            $("#menu-toggle").click(function(e) {
+                e.preventDefault();
+                $("#wrapper").toggleClass("toggled");
+            });
+
+            // Mobilde menü dışına veya linke tıklanınca menüyü kapat
+            $(".nav-link").click(function() {
+                if ($(window).width() <= 992) {
+                    $("#wrapper").removeClass("toggled");
+                }
+            });
+        });
+
+        // Mevcut Scriptlerin Tamamı
         if (typeof ChartDataLabels !== 'undefined') {
             Chart.register(ChartDataLabels);
         }
 
         document.addEventListener("DOMContentLoaded", function () {
-            // Aktif link işaretleme (Path ve Query String kontrolü ile)
             const currentPath = window.location.pathname;
             document.querySelectorAll('.sidebar .nav-link').forEach(link => {
                 if (link.getAttribute('href') === currentPath ||
@@ -149,7 +221,6 @@
                 }
             });
 
-            // Inputları temizle veya hafızadan getir
             document.getElementById("menuBas").value = localStorage.getItem("baslangic") || "";
             document.getElementById("menuBit").value = localStorage.getItem("bitis") || "";
         });
@@ -157,32 +228,21 @@
         async function raporuGetir() {
             const bas = document.getElementById("menuBas").value;
             const bit = document.getElementById("menuBit").value;
-
             if (!bas || !bit) return alert("⚠️ Lütfen başlangıç ve bitiş tarihlerini seçiniz!");
-
             const btn = document.getElementById("btnRapor");
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Analiz Ediliyor...';
-
             try {
-                // API URL'sini ve parametrelerini kontrol et
                 const res = await fetch(`/api/TurAnaliz?baslangic=${encodeURIComponent(bas)}&bitis=${encodeURIComponent(bit)}`);
                 if (!res.ok) throw new Error("Veri çekilemedi!");
-
                 const data = await res.json();
-
-                // Verileri kaydet
                 localStorage.setItem("baslangic", bas);
                 localStorage.setItem("bitis", bit);
                 sessionStorage.setItem("turData", JSON.stringify(data));
-
-                // Kullanıcıyı Dashboard'a (Index) yönlendir
-                // Dashboard sayfasında veriler sessionStorage'dan otomatik okunacak
                 window.location.href = "/Index";
-
             } catch (err) {
                 console.error("Hata:", err);
-                alert("❌ Veri getirilirken bir hata oluştu. Lütfen bağlantınızı kontrol edin.");
+                alert("❌ Veri getirilirken bir hata oluştu.");
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Raporu Güncelle';
@@ -191,7 +251,7 @@
 
         function gitEksikNokta() {
             if (!sessionStorage.getItem("turData")) {
-                alert("🔍 Dashboard verisi bulunamadı. Lütfen önce 'Raporu Güncelle' butonuna basınız.");
+                alert("🔍 Dashboard verisi bulunamadı.");
                 return;
             }
             window.location.href = "/EksikNokta";
@@ -199,7 +259,7 @@
 
         function exportToExcel() {
             const table = document.querySelector("table");
-            if (!table) return alert("❌ Aktarılacak veri tablosu bulunamadı! Lütfen bir rapor sayfası açın.");
+            if (!table) return alert("❌ Aktarılacak veri tablosu bulunamadı!");
             const wb = XLSX.utils.table_to_book(table, { sheet: "Guvenlik_Tur_Raporu" });
             XLSX.writeFile(wb, `Tur_Raporu_${new Date().toISOString().split('T')[0]}.xlsx`);
         }
@@ -211,13 +271,12 @@
                 margin: 0.3,
                 filename: 'Guvenlik_Tur_Analizi.pdf',
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+                html2canvas: { scale: 2, useCORS: true },
                 jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
             html2pdf().set(opt).from(element).save();
         }
     </script>
-
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

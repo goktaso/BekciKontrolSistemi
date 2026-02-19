@@ -1,7 +1,17 @@
 using System.Data;
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using GuvenlikKontrolWeb.Data; // Kendi Data klasör yolun
 
 var builder = WebApplication.CreateBuilder(args);
+
+// --- BURAYI EKLE ---
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(connectionString));
+// -------------------
+
+builder.Services.AddRazorPages();
 builder.Services.AddRazorPages();
 var app = builder.Build();
 

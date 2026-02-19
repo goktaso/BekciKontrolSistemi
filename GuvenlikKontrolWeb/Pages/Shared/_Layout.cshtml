@@ -57,7 +57,7 @@
                     box-shadow: 0 4px 15px rgba(0,210,255,0.4);
                 }
 
-        /* Mobil Header (Hamburger Butonu İçin) */
+        /* Mobil Header */
         .mobile-top-bar {
             display: none;
             background: #1a2a6c;
@@ -69,7 +69,6 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* Filtre ve Export Alanları */
         .filter-section {
             padding: 1.2rem;
             background: rgba(255,255,255,0.08);
@@ -93,12 +92,6 @@
             transition: all 0.3s;
         }
 
-        .form-control-sm {
-            font-size: 0.8rem;
-            border-radius: 8px;
-        }
-
-        /* RESPONSIVE DÜZENLEMER - Build Hatasını Önleyen Güvenli Yazım */
         @Html.Raw("@media") (max-width: 992px) {
             .sidebar
 
@@ -120,7 +113,7 @@
         .content-area {
             padding: 1rem;
         }
-        /* Menü açıkken arka planı hafif karartma */
+
         #wrapper.toggled .content-area {
             opacity: 0.3;
             pointer-events: none;
@@ -173,9 +166,14 @@
                 <button onclick="exportToExcel()" class="btn btn-success btn-sm w-100 mb-2 shadow-sm text-start">
                     <i class="bi bi-file-earmark-excel me-2"></i> Excel (.xlsx)
                 </button>
-                <button onclick="exportToPDF()" class="btn btn-danger btn-sm w-100 shadow-sm text-start">
+                <button onclick="exportToPDF()" class="btn btn-danger btn-sm w-100 mb-3 shadow-sm text-start">
                     <i class="bi bi-file-earmark-pdf me-2"></i> PDF (.pdf)
                 </button>
+
+                @* VERİ YÜKLE BUTONU - Dışa Aktar Butonlarının Altında ve Farklı Renkte (Turuncu) *@
+                <a href="/VeriYukle" class="btn btn-warning btn-sm w-100 shadow-sm text-start fw-bold" style="color: #1a2a6c;">
+                    <i class="bi bi-cloud-arrow-up-fill me-2"></i> VERİ YÜKLE
+                </a>
             </div>
         </div>
 
@@ -192,25 +190,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <script>
-        // Hamburger Menü Kontrolü
         $(document).ready(function() {
             $("#menu-toggle").click(function(e) {
                 e.preventDefault();
                 $("#wrapper").toggleClass("toggled");
             });
 
-            // Mobilde menü dışına veya linke tıklanınca menüyü kapat
             $(".nav-link").click(function() {
                 if ($(window).width() <= 992) {
                     $("#wrapper").removeClass("toggled");
                 }
             });
         });
-
-        // Mevcut Scriptlerin Tamamı
-        if (typeof ChartDataLabels !== 'undefined') {
-            Chart.register(ChartDataLabels);
-        }
 
         document.addEventListener("DOMContentLoaded", function () {
             const currentPath = window.location.pathname;

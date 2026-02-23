@@ -145,13 +145,13 @@
 
             while (d <= maxZaman) {
                 for (let i = 0; i < 24; i++) {
-                    let hedefSaat = (18 + i) % 24;
+                    let hedefSaat = (19 + i) % 24;
                     let hedefZaman = new Date(d);
                     hedefZaman.setHours(hedefSaat, 0, 0, 0);
-                    if (hedefSaat < 18) { hedefZaman.setDate(hedefZaman.getDate() + 1); }
+                    if (hedefSaat < 19) { hedefZaman.setDate(hedefZaman.getDate() + 1); }
 
                     const gunTipi = hedefZaman.getDay(); // 0: Pazar, 6: Cumartesi
-                    let denetimGerekli = (gunTipi === 0 || gunTipi === 6) || (hedefZaman.getHours() >= 18 || hedefZaman.getHours() < 7);
+                    let denetimGerekli = (gunTipi === 0 || gunTipi === 6) || (hedefZaman.getHours() >= 19 || hedefZaman.getHours() < 7);
 
                     if (denetimGerekli && hedefZaman <= maxZaman) {
                         const tarihStr = hedefZaman.toLocaleDateString('tr-TR');

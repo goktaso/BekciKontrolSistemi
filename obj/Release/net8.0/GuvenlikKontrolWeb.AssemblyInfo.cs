@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GuvenlikKontrolWeb")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+90190a446a8318111d4f2410b02526541649e3ec")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+47f0b2e5e9bfe7be506ec92424ece20e263c8285")]
 [assembly: System.Reflection.AssemblyProductAttribute("GuvenlikKontrolWeb")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GuvenlikKontrolWeb")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -1,0 +1,277 @@
+﻿@page
+@model AtilmayanTurModel
+@{
+    ViewData["Title"] = "Atılmayan Tur Analizi";
+}
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/fixedheader/3.4.0/css/fixedHeader.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+<style>
+    /* Sabit Başlık ve Tablo Düzeni */
+    .table-responsive-wrapper {
+        max-height: 70vh;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+    }
+
+    #detayTablo thead th {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background-color: #0d6efd !important;
+        color: white;
+        vertical-align: middle;
+        box-shadow: inset 0 -2px 0 #0b5ed7;
+    }
+
+    /* Filtre Select Kutuları */
+    .filter-select {
+        font-weight: normal;
+        margin-top: 5px;
+        color: #333;
+    }
+
+    .card {
+        border-radius: 12px;
+        border: none;
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(45deg, #0d6efd, #00d2ff);
+    }
+</style>
+
+<div class="container-fluid py-3 animate__animated animate__fadeIn">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold text-dark mb-0"><i class="bi bi-shield-exclamation text-danger me-2"></i>Atılmayan Tur Denetim Raporu</h3>
+            <p class="text-muted small">VBA Mantığı ile Hafta İçi (18-07) ve Hafta Sonu (24s) Analizi</p>
+        </div>
+        <div class="btn-group">
+            <button onclick="window.print()" class="btn btn-outline-dark btn-sm"><i class="bi bi-printer me-1"></i> Yazdır</button>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="card-title mb-0 fw-bold"><i class="bi bi-list-check me-2"></i>Günlük Başarı Özeti</h6>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-sm table-hover mb-0" id="ozetTablo">
+                        <thead class="table-light">
+                            <tr class="small">
+                                <th>Tarih</th>
+                                <th class="text-center text-success">Atılan</th>
+                                <th class="text-center text-danger">Atılmayan</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="card-title mb-0 fw-bold"><i class="bi bi-bar-chart-fill me-2"></i>Performans Dağılım Grafiği</h6>
+                </div>
+                <div class="card-body" style="min-height: 300px;">
+                    <canvas id="basariGrafigi"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-gradient-primary text-white py-3">
+            <h6 class="card-title mb-0 fw-bold"><i class="bi bi-search me-2"></i>Denetim Detayları (Filtrelenebilir)</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive-wrapper">
+                <table class="table table-bordered table-sm mb-0" id="detayTablo">
+                    <thead>
+                        <tr class="text-center">
+                            <th>Denetim Tarihi</th>
+                            <th>Hedef Tur Saati</th>
+                            <th>Durum / Mesaj</th>
+                            <th>Gerçek Başlangıç</th>
+                            <th>Gerçek Bitiş</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-center small"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+    <script>
+        // DataLabels eklentisini kaydedelim
+        Chart.register(ChartDataLabels);
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const rawData = JSON.parse(sessionStorage.getItem("turData") || "[]");
+            if (rawData.length > 0) {
+                console.log("Veri İşleniyor...");
+                vbaMantigiylaRaporla(rawData);
+            }
+        });
+
+        function vbaMantigiylaRaporla(data) {
+            const detayBody = document.querySelector("#detayTablo tbody");
+            const gunlukGrup = {};
+            detayBody.innerHTML = "";
+
+            // VBA'daki zaman alanı: devriyeZamani
+            const zamanlar = data.map(x => new Date(x.devriyeZamani)).filter(d => !isNaN(d));
+            const minZaman = new Date(Math.min(...zamanlar));
+            const maxZaman = new Date(Math.max(...zamanlar));
+
+            let d = new Date(minZaman);
+            d.setHours(0, 0, 0, 0);
+
+            while (d <= maxZaman) {
+                for (let i = 0; i < 24; i++) {
+                    let hedefSaat = (18 + i) % 24;
+                    let hedefZaman = new Date(d);
+                    hedefZaman.setHours(hedefSaat, 0, 0, 0);
+                    if (hedefSaat < 18) { hedefZaman.setDate(hedefZaman.getDate() + 1); }
+
+                    const gunTipi = hedefZaman.getDay(); // 0: Pazar, 6: Cumartesi
+                    let denetimGerekli = (gunTipi === 0 || gunTipi === 6) || (hedefZaman.getHours() >= 18 || hedefZaman.getHours() < 7);
+
+                    if (denetimGerekli && hedefZaman <= maxZaman) {
+                        const tarihStr = hedefZaman.toLocaleDateString('tr-TR');
+                        const altLimit = new Date(hedefZaman.getTime() - 10 * 60000);
+                        const ustLimit = new Date(hedefZaman.getTime() + 10 * 60000);
+
+                        const bulunanTur = data.find(x => {
+                            const z = new Date(x.devriyeZamani);
+                            return z >= altLimit && z <= ustLimit;
+                        });
+
+                        if (!gunlukGrup[tarihStr]) gunlukGrup[tarihStr] = { atilan: 0, atilmayan: 0 };
+
+                        let durum = "", renk = "", gBas = "-", gBit = "-";
+
+                        if (bulunanTur) {
+                            gunlukGrup[tarihStr].atilan++;
+                            durum = "Tur Atıldı";
+                            renk = "text-success";
+                            const ayniTur = data.filter(x => x.turNo === bulunanTur.turNo);
+                            const tZamanlar = ayniTur.map(x => new Date(x.devriyeZamani));
+                            gBas = new Date(Math.min(...tZamanlar)).toLocaleTimeString('tr-TR');
+                            gBit = new Date(Math.max(...tZamanlar)).toLocaleTimeString('tr-TR');
+                        } else {
+                            gunlukGrup[tarihStr].atilmayan++;
+                            durum = "Tur Atılmamıştır";
+                            renk = "text-danger";
+                        }
+
+                        detayBody.innerHTML += `
+                            <tr>
+                                <td>${tarihStr}</td>
+                                <td>${String(hedefSaat).padStart(2, '0')}:00 Turu</td>
+                                <td class="fw-bold ${renk}">${durum}</td>
+                                <td>${gBas}</td>
+                                <td>${gBit}</td>
+                            </tr>`;
+                    }
+                }
+                d.setDate(d.getDate() + 1);
+            }
+
+            // Arayüzü Tetikle
+            initDataTable();
+            renderOzet(gunlukGrup);
+            renderChart(gunlukGrup);
+        }
+
+        function initDataTable() {
+            if ($.fn.DataTable.isDataTable('#detayTablo')) {
+                $('#detayTablo').DataTable().destroy();
+            }
+
+            const table = $('#detayTablo').DataTable({
+                "language": { "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json" },
+                "pageLength": 50,
+                "order": [[0, "desc"], [1, "asc"]],
+                initComplete: function () {
+                    // Tarih (0) ve Durum (2) kolonlarına filtre ekle
+                    this.api().columns([0, 2]).every(function () {
+                        let column = this;
+                        let select = $('<select class="form-select form-select-sm filter-select"><option value="">Tümü</option></select>')
+                            .appendTo($(column.header()))
+                            .on('change', function () {
+                                let val = $.fn.dataTable.util.escapeRegex($(this).val());
+                                column.search(val ? '^' + val + '$' : '', true, false).draw();
+                            });
+
+                        column.data().unique().sort().each(function (d) {
+                            select.append('<option value="' + d + '">' + d + '</option>')
+                        });
+                        $(select).click(function(e) { e.stopPropagation(); });
+                    });
+                }
+            });
+        }
+
+        function renderChart(grup) {
+            const ctx = document.getElementById('basariGrafigi').getContext('2d');
+            const dates = Object.keys(grup).sort();
+
+            if (window.myChart) { window.myChart.destroy(); }
+
+            window.myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        { label: 'Atılan Tur', data: dates.map(d => grup[d].atilan), backgroundColor: '#198754' },
+                        { label: 'Atılmayan Tur', data: dates.map(d => grup[d].atilmayan), backgroundColor: '#dc3545' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } },
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        datalabels: {
+                            color: 'white',
+                            font: { weight: 'bold', size: 11 },
+                            formatter: (value) => value > 0 ? value : ""
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderOzet(grup) {
+            const ozetBody = document.querySelector("#ozetTablo tbody");
+            const tarihler = Object.keys(grup).sort();
+            ozetBody.innerHTML = "";
+            tarihler.forEach(t => {
+                ozetBody.innerHTML += `
+                    <tr>
+                        <td class="fw-bold">${t}</td>
+                        <td class="text-center text-success fw-bold">${grup[t].atilan}</td>
+                        <td class="text-center text-danger fw-bold">${grup[t].atilmayan}</td>
+                    </tr>`;
+            });
+        }
+    </script>
+}

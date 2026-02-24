@@ -181,7 +181,7 @@
             while (tempZaman <= bitisSiniri) {
                 const gunTipi = tempZaman.getDay();
                 const saat = tempZaman.getHours();
-                const denetimGerekli = (gunTipi === 0 || gunTipi === 6) || (saat >= 18 || saat < 7);
+                const denetimGerekli = (gunTipi === 0 || gunTipi === 6) || (saat >= 19 || saat < 7);
 
                 if (denetimGerekli) {
                     const gunKey = tempZaman.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });

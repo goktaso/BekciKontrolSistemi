@@ -149,8 +149,8 @@ D:\C#\GuvenlikKontrol\GuvenlikKontrolWeb\obj\Debug\net8.0\staticwebassets.upToDa
 D:\C#\GuvenlikKontrol\GuvenlikKontrolWeb\obj\Debug\net8.0\GuvenlikKontrolWeb.sourcelink.json
 C:\Users\ozay.goktas\source\repos\GuvenlikKontrol\GuvenlikKontrolWeb\bin\Debug\net8.0\appsettings.Development.json
 C:\Users\ozay.goktas\source\repos\GuvenlikKontrol\GuvenlikKontrolWeb\bin\Debug\net8.0\appsettings.json
-C:\Users\ozay.goktas\source\repos\GuvenlikKontrol\GuvenlikKontrolWeb\bin\Debug\net8.0\GuvenlikKontrolWeb.staticwebassets.endpoints.json
 C:\Users\ozay.goktas\source\repos\GuvenlikKontrol\GuvenlikKontrolWeb\bin\Debug\net8.0\GuvenlikKontrolWeb.staticwebassets.runtime.json
+C:\Users\ozay.goktas\source\repos\GuvenlikKontrol\GuvenlikKontrolWeb\bin\Debug\net8.0\GuvenlikKontrolWeb.staticwebassets.endpoints.json
 C:\Users\ozay.goktas\source\repos\GuvenlikKontrol\GuvenlikKontrolWeb\bin\Debug\net8.0\GuvenlikKontrolWeb.exe
 C:\Users\ozay.goktas\source\repos\GuvenlikKontrol\GuvenlikKontrolWeb\bin\Debug\net8.0\GuvenlikKontrolWeb.deps.json
 C:\Users\ozay.goktas\source\repos\GuvenlikKontrol\GuvenlikKontrolWeb\bin\Debug\net8.0\GuvenlikKontrolWeb.runtimeconfig.json

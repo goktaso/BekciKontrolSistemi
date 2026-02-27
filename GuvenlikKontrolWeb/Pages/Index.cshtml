@@ -1,188 +1,192 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Güvenlik Operasyon Merkezi";
+    ViewData["Title"] = "GOM Yönetim Paneli - Final";
 }
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-
 <style>
-    :root {
-        --primary: #4e73df;
-        --danger: #e74a3b;
-        --success: #1cc88a;
-        --warning: #f6c23e;
-        --bg-light: #f8f9fc;
-        --text-main: #5a5c69;
-    }
-
     body {
-        background-color: var(--bg-light);
-        font-family: 'Inter', sans-serif;
-        color: var(--text-main);
+        background-color: #f4f7f6;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    /* Kart Tasarımları ve Büyük Puntolar */
+    .stat-card {
+        transition: transform 0.2s;
+        border: none !important;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
 
-    .dashboard-card {
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
-        margin-bottom: 1.5rem;
-        background: white;
-    }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
 
-    .border-left-primary {
-        border-left: 0.35rem solid var(--primary) !important;
-    }
-
-    .border-left-danger {
-        border-left: 0.35rem solid var(--danger) !important;
-    }
-
-    .border-left-success {
-        border-left: 0.35rem solid var(--success) !important;
-    }
-
-    .stat-label {
-        font-size: 0.7rem;
-        font-weight: 700;
-        color: var(--primary);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .stat-value {
-        font-size: 1.7rem;
-        font-weight: 700;
-        color: #3a3b45;
-    }
-
-    .chart-area {
-        height: 320px;
-        position: relative;
-    }
-
-    .scroll-container {
-        max-height: 320px;
-        overflow-y: auto;
-        padding: 5px;
-    }
-
-    .missed-tour-item {
-        background: #fff5f5;
-        border: 1px solid #ffe3e3;
-        border-radius: 8px;
-        padding: 10px 15px;
-        margin-bottom: 8px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .missed-tour-time {
-        font-weight: 700;
-        color: #c53030;
-        font-size: 1rem;
-    }
-
-    .performance-table {
-        font-size: 0.85rem;
-    }
-
-        .performance-table thead th {
-            font-size: 0.7rem;
-            font-weight: 700;
+        .stat-card .card-title {
+            font-size: 1.2rem;
+            font-weight: 800;
             text-transform: uppercase;
-            color: #4e73df;
-            background: #f8f9fc;
-            border-bottom: 2px solid #e3e6f0;
-            padding: 12px;
+            letter-spacing: 1px;
         }
 
-        .performance-table tbody td {
-            padding: 12px;
-            vertical-align: middle;
+        .stat-card .card-value {
+            font-size: 3.8rem;
+            font-weight: 900;
+            line-height: 1;
+            margin: 10px 0;
         }
 
-    .bekci-adi {
+        .stat-card small {
+            font-size: 0.85rem;
+            font-weight: 600;
+            opacity: 0.8;
+        }
+
+    .table thead th {
+        background-color: #f8f9fc;
+        text-transform: uppercase;
         font-size: 0.9rem;
-        font-weight: 600;
-        color: #3a3b45;
+        font-weight: 700;
+        color: #4e73df;
+        padding: 15px;
+        border-bottom: 3px solid #e3e6f0;
     }
 
     .progress {
-        height: 10px;
-        border-radius: 5px;
+        height: 15px;
+        border-radius: 10px;
         background-color: #eaecf4;
+    }
+
+    /* [2026-02-25] Müşteri Sayfası Standart Butonları */
+    .btn-action {
+        background: white;
+        border: 2px solid #d1d3e2;
+        color: #4e73df;
+        font-weight: 700;
+        padding: 8px 20px;
+        transition: 0.3s;
+        border-radius: 8px;
+    }
+
+        .btn-action:hover {
+            background: #4e73df;
+            color: white;
+            border-color: #4e73df;
+        }
+
+    .dashboard-header {
+        background: linear-gradient(135deg, #ffffff 0%, #fffde7 100%);
+        border: 1px solid #e3e6f0;
+        border-radius: 20px;
+        padding: 30px;
+    }
+
+    .section-title {
+        border-left: 5px solid #4e73df;
+        padding-left: 15px;
+        margin-bottom: 20px;
+        color: #2c3e50;
+        font-weight: 800;
     }
 </style>
 
 <div class="container-fluid py-4">
-    <div class="row g-4 mb-4">
-        <div class="col-md-4">
-            <div class="card dashboard-card p-3 border-left-primary h-100">
-                <div class="stat-label">Seçili Aralıktaki Toplam Okutma</div>
-                <div class="stat-value" id="statNokta">0</div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card dashboard-card bg-danger text-white p-3 h-100 shadow">
-                <div class="small fw-bold text-uppercase opacity-75">Atılmayan Tur (Aranan Aralığa Göre)</div>
-                <div class="stat-value text-white" id="statEksik">0</div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card dashboard-card p-3 border-left-success h-100">
-                <div class="stat-label">Seçili Aralık Başarı Oranı</div>
-                <div class="stat-value" id="statOran">0%</div>
+    <div class="row mb-4">
+        <div class="col-12 text-center dashboard-header shadow-sm">
+            <h1 class="fw-bold mb-0" style="color: #2c3e50; letter-spacing: -1px;">GÜVENLİK KONTROL NOKTASI DENETİM DASHBOARD</h1>
+            <div class="mt-2">
+                <span class="badge bg-primary px-4 py-2 fs-5 rounded-pill shadow-sm">
+                    <i class="bi bi-calendar3 me-2"></i><span id="lblBaslangic">--.--.----</span> - <span id="lblBitis">--.--.----</span>
+                </span>
             </div>
         </div>
     </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-lg-7">
-            <div class="card dashboard-card h-100">
-                <div class="card-header bg-white py-3 border-0"><h6 class="m-0 fw-bold text-primary">Günlük Tur Analizi</h6></div>
-                <div class="card-body"><div class="chart-area"><canvas id="chartGunlukTur"></canvas></div></div>
+    <div class="d-flex justify-content-end gap-3 mb-4">
+        <button onclick="window.print()" class="btn btn-action shadow-sm"><i class="bi bi-printer me-2"></i>PDF / YAZDIR</button>
+        <button onclick="exportToExcel()" class="btn btn-action shadow-sm text-success"><i class="bi bi-file-earmark-excel me-2"></i>EXCEL RAPORU</button>
+        <button class="btn btn-primary shadow-lg px-5 fw-bold rounded-pill" onclick="location.reload()"><i class="bi bi-arrow-clockwise me-2"></i>VERİLERİ TAZELE</button>
+    </div>
+
+    <div class="row g-4 mb-4 text-center">
+        <div class="col-xl col-md-4"><div class="card stat-card border-start border-primary border-5 p-3 h-100"><div class="text-primary card-title">Atılan Tur</div><div class="card-value" id="statAtilan">0</div></div></div>
+        <div class="col-xl col-md-4"><div class="card stat-card border-start border-success border-5 p-3 h-100"><div class="text-success card-title">Eksiksiz Tur</div><div class="card-value" id="statEksiksiz">0</div></div></div>
+        <div class="col-xl col-md-4"><div class="card stat-card border-start border-warning border-5 p-3 h-100"><div class="text-warning card-title">Eksik Tur</div><div class="card-value" id="statEksik">0</div></div></div>
+        <div class="col-xl col-md-6"><div class="card stat-card border-start border-danger border-5 p-3 h-100"><div class="text-danger card-title">Atılmayan Tur</div><div class="card-value text-danger" id="statAtilmayan">0</div><small class="text-muted">(19:00 - 08:00 Arası)</small></div></div>
+        <div class="col-xl col-md-6"><div class="card stat-card border-start border-dark border-5 p-3 h-100"><div class="text-dark card-title">Mükerrer Okutma</div><div class="card-value text-danger" id="statMukerrer">0</div><small class="text-muted">Aynı Nokta Tekrarları</small></div></div>
+    </div>
+
+    <div class="row g-4 mb-5 text-center">
+        <div class="col-xl-4 col-md-6">
+            <div class="card stat-card border-start border-info border-5 p-3 h-100 bg-white">
+                <div class="text-info card-title">Kritik Saat Uyumu</div>
+                <div class="card-value text-info" id="statKritikSaat">%0</div>
+                <small class="text-dark fw-bold">02:00 - 05:00 Arası Tur Başarısı</small>
             </div>
         </div>
-
-        <div class="col-lg-5">
-            <div class="card dashboard-card border-left-danger h-100">
-                <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 fw-bold text-danger">Atılmayan Tur Saatleri</h6>
-                    <span class="badge bg-danger rounded-pill" id="badgeEksikSayisi">0</span>
-                </div>
-                <div class="card-body p-2">
-                    <div id="missedToursList" class="scroll-container">
-                        <div class="text-center text-muted py-5 small">Lütfen sol menüden raporlama yapınız...</div>
-                    </div>
-                </div>
+        <div class="col-xl-4 col-md-6">
+            <div class="card stat-card border-start border-secondary border-5 p-3 h-100 bg-white">
+                <div class="text-secondary card-title">Genel Hız Ortalaması</div>
+                <div class="card-value text-dark" id="statGenelOrtalama">00:00</div>
+                <small class="text-muted">İdeal Tur Süresi: 20-25 Dk.</small>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-12">
+            <div class="card stat-card border-start border-danger border-5 p-3 h-100 bg-white">
+                <div class="text-danger card-title">Şüpheli Hızlı Turlar</div>
+                <div class="card-value text-danger" id="statSupheliTur">0</div>
+                <small class="text-dark fw-bold">10 Dakikadan Kısa Süren Turlar</small>
             </div>
         </div>
     </div>
 
     <div class="row">
         <div class="col-12">
-            <div class="card dashboard-card">
-                <div class="card-header bg-white py-3 border-0">
-                    <h6 class="m-0 fw-bold text-primary">Performans Detay Verileri (Aktif Personel)</h6>
-                </div>
+            <h4 class="section-title">Günlük Operasyonel Verimlilik</h4>
+            <div class="card shadow-sm border-0 mb-5 rounded-4 overflow-hidden">
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 performance-table">
-                            <thead>
-                                <tr>
-                                    <th class="ps-4">Bekçi Adı</th>
-                                    <th class="text-center">Toplam Tur</th>
-                                    <th class="text-center text-success">Eksiksiz Tur</th>
-                                    <th class="text-center text-danger">Eksikli Tur</th>
-                                    <th class="text-center text-warning">Eksik Nokta</th>
-                                    <th class="text-center" style="width: 250px;">Başarı Oranı</th>
-                                </tr>
-                            </thead>
-                            <tbody id="bekciKarneBody"></tbody>
-                        </table>
+                    <table class="table table-hover align-middle mb-0 text-center">
+                        <thead><tr><th class="ps-4 text-start">Tarih</th><th>Toplam Tur</th><th class="text-primary">Min. Süre</th><th class="text-danger">Max. Süre</th><th>Ortalama Süre</th></tr></thead>
+                        <tbody id="bodyGunluk" class="fs-5 fw-bold"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <h4 class="section-title">Personel Bazlı Denetim Detayları</h4>
+            <div class="card shadow-sm border-0 mb-5 rounded-4 overflow-hidden">
+                <div class="card-body p-0">
+                    <table class="table table-hover align-middle mb-0 text-center">
+                        <thead><tr><th class="ps-4 text-start">Bekçi Adı</th><th>Tur Sayısı</th><th class="text-success">Eksiksiz</th><th class="text-warning">Eksikli</th><th class="text-danger">Eksik Nokta</th><th style="width:350px">Performans Skoru</th></tr></thead>
+                        <tbody id="bodyPerformans" class="fs-6"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-7">
+                    <h4 class="section-title text-warning">Atlanan Nokta Arşivi</h4>
+                    <div class="card shadow-sm border-0 mb-4 rounded-4 overflow-hidden border-top border-warning border-5">
+                        <div class="card-body p-0">
+                            <div class="table-responsive" style="max-height: 400px;">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="table-light"><tr><th class="ps-3">Tur #</th><th>Bekçi</th><th>Atlanan Nokta</th><th class="text-end pe-3">Zaman Damgası</th></tr></thead>
+                                    <tbody id="bodyAtlananDetay"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <h4 class="section-title text-danger">Mükerrer Analiz Kayıtları</h4>
+                    <div class="card shadow-sm border-0 mb-4 rounded-4 overflow-hidden border-top border-danger border-5">
+                        <div class="card-body p-0">
+                            <div class="table-responsive" style="max-height: 400px;">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="table-light"><tr><th class="ps-3">Tur #</th><th>Bekçi</th><th>Nokta</th><th class="text-center">Tespit</th></tr></thead>
+                                    <tbody id="bodyMukerrerDetay"></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -191,145 +195,103 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-
     <script>
-        Chart.register(ChartDataLabels);
-        let myChart = null;
+        const beklenenNoktalar = ["İdari Bina","Shring Mak.","Kalite Kontrol","Eski Kazan Yıkama(Vernik)","Trafo","Pasta Dairesi","Alkid Zemin","Alkid 1.Kat","Alkid 2.Kat","Kazan Dairesi","İnşaat Su Deposu","İnşaat Arka","İnşaat Üretim Platform","İnşaat Ambalaj Depo","Atölye"];
 
         document.addEventListener("DOMContentLoaded", () => {
             const data = JSON.parse(sessionStorage.getItem("turData") || "[]");
-            if (data.length > 0) processDashboard(data);
+            if (data.length > 0) analizFinal(data);
         });
 
-        function processDashboard(data) {
-            // 1. SOL MENÜ TARİHLERİNİ AL (Dinamik Filtreleme)
-            const basInput = document.getElementById("baslangicTarihi")?.value;
-            const bitInput = document.getElementById("bitisTarihi")?.value;
-
-            let baslangicSiniri, bitisSiniri;
-
-            if (basInput && bitInput) {
-                baslangicSiniri = new Date(basInput);
-                bitisSiniri = new Date(bitInput);
-            } else {
-                const zamanlar = data.map(x => new Date(x.devriyeZamani)).filter(d => !isNaN(d));
-                baslangicSiniri = new Date(Math.min(...zamanlar));
-                bitisSiniri = new Date(Math.max(...zamanlar));
-            }
-
-            // 2. SADECE SEÇİLEN ARALIKTAKİ VERİLERİ FİLTRELE
-            const filtrelenmişVeri = data.filter(item => {
-                let z = new Date(item.devriyeZamani);
-                return z >= baslangicSiniri && z <= bitisSiniri;
-            });
-
-            let gunlukTurlar = {};
-            let eksikSaatler = [];
-            let bekciStats = {};
-
-            // İsimleri başlat
-            filtrelenmişVeri.forEach(item => {
-                const isim = item.bekciAdi?.trim();
-                if(isim && isim !== "" && isim !== "---") {
-                    if(!bekciStats[isim]) bekciStats[isim] = { toplamTur: 0, eksiksizTur: 0, eksikliTur: 0, eksikNokta: 0 };
-                }
-            });
-
-            let atilanTotal = 0; let atilmayanTotal = 0;
-            let tempZaman = new Date(baslangicSiniri);
-            tempZaman.setMinutes(0, 0, 0);
-
-            // 3. ANALİZ DÖNGÜSÜ (Tam olarak seçili aralıkta gezer)
-            while (tempZaman <= bitisSiniri) {
-                const gunTipi = tempZaman.getDay();
-                const saat = tempZaman.getHours();
-                const denetimGerekli = (gunTipi === 0 || gunTipi === 6) || (saat >= 18 || saat < 7);
-
-                if (denetimGerekli) {
-                    const gunKey = tempZaman.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
-                    if (!gunlukTurlar[gunKey]) gunlukTurlar[gunKey] = 0;
-
-                    const alt = new Date(tempZaman.getTime() - 15 * 60000);
-                    const ust = new Date(tempZaman.getTime() + 15 * 60000);
-
-                    // Sadece filtrelenmiş veri içinde ara
-                    const bulundu = filtrelenmişVeri.find(x => {
-                        let z = new Date(x.devriyeZamani);
-                        return z >= alt && z <= ust;
-                    });
-
-                    if (bulundu) {
-                        atilanTotal++;
-                        gunlukTurlar[gunKey]++;
-                        const isim = bulundu.bekciAdi?.trim();
-                        if (bekciStats[isim]) {
-                            bekciStats[isim].toplamTur++;
-                            bekciStats[isim].eksiksizTur++;
-                        }
-                    } else {
-                        atilmayanTotal++;
-                        eksikSaatler.push({
-                            tarih: tempZaman.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' }),
-                            saat: tempZaman.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
-                        });
-                    }
-                }
-                tempZaman.setHours(tempZaman.getHours() + 1);
-            }
-
-            // 4. UI GÜNCELLEME
-            document.getElementById('statNokta').innerText = filtrelenmişVeri.length;
-            document.getElementById('statEksik').innerText = atilmayanTotal;
-            document.getElementById('badgeEksikSayisi').innerText = atilmayanTotal;
-            let basariOrani = atilanTotal + atilmayanTotal > 0 ? Math.round((atilanTotal / (atilanTotal + atilmayanTotal)) * 100) : 0;
-            document.getElementById('statOran').innerText = basariOrani + "%";
-
-            // Eksik Saatler Listesi
-            document.getElementById('missedToursList').innerHTML = eksikSaatler.reverse().map(item => `
-                <div class="missed-tour-item">
-                    <span class="text-muted small fw-bold">${item.tarih}</span>
-                    <span class="missed-tour-time">${item.saat}</span>
-                </div>
-            `).join('') || '<div class="text-center py-5 text-success">Tüm turlar tamam!</div>';
-
-            // Performans Tablosu
-            document.getElementById('bekciKarneBody').innerHTML = Object.keys(bekciStats).map(name => {
-                const s = bekciStats[name];
-                let basari = Math.round((s.eksiksizTur / s.toplamTur) * 100);
-                if (name.includes("Yücel Gümüş")) { s.eksikliTur = 1; s.eksikNokta = 1; s.eksiksizTur -= 1; basari = 91.7; }
-
-                return `
-                    <tr>
-                        <td class="ps-4"><div class="bekci-adi">${name}</div></td>
-                        <td class="text-center fw-bold">${s.toplamTur}</td>
-                        <td class="text-center text-success fw-bold">${s.eksiksizTur}</td>
-                        <td class="text-center text-danger">${s.eksikliTur}</td>
-                        <td class="text-center text-warning">${s.eksikNokta}</td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <span class="me-2 fw-bold" style="min-width:45px;">%${basari}</span>
-                                <div class="progress flex-grow-1"><div class="progress-bar ${basari >= 95 ? 'bg-success' : 'bg-warning'}" style="width: ${basari}%"></div></div>
-                            </div>
-                        </td>
-                    </tr>`;
-            }).join('');
-
-            updateChart(gunlukTurlar);
+        function saniyeToHms(s) {
+            if(!s || s < 0) return "00:00";
+            const h = Math.floor(s / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            const sec = s % 60;
+            return `${h > 0 ? h + ':' : ''}${m < 10 ? '0' + m : m}:${sec < 10 ? '0' + sec : sec}`;
         }
 
-        function updateChart(chartData) {
-            const ctx = document.getElementById('chartGunlukTur').getContext('2d');
-            if (myChart) myChart.destroy();
-            myChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(chartData),
-                    datasets: [{ label: 'Tur Sayısı', data: Object.values(chartData), backgroundColor: '#4e73df', borderRadius: 6 }]
-                },
-                options: { maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: true, anchor:'end', align:'top' } } }
+        function analizFinal(data) {
+            const tarihler = data.map(d => new Date(d.devriyeZamani)).filter(d => !isNaN(d)).sort((a,b) => a-b);
+            document.getElementById("lblBaslangic").innerText = tarihler[0].toLocaleDateString('tr-TR');
+            document.getElementById("lblBitis").innerText = tarihler[tarihler.length-1].toLocaleDateString('tr-TR');
+
+            const turGruplar = {};
+            let mukSay = 0, mList = "", aList = "";
+
+            data.forEach(row => {
+                if ((row.satirTipi || row.SatirTipi) === "DETAY") {
+                    const key = `${row.turNo}|${row.bekciAdi}`;
+                    if (!turGruplar[key]) turGruplar[key] = { n: [], z: [], b: row.bekciAdi, t: row.devriyeZamani, no: row.turNo };
+                    if (turGruplar[key].n.includes(row.kontrolNoktasiAdi)) {
+                        mukSay++;
+                        mList += `<tr><td class="ps-3">#${row.turNo}</td><td>${row.bekciAdi}</td><td class="text-danger fw-bold">${row.kontrolNoktasiAdi}</td><td class="text-center"><span class="badge bg-danger">TEKRAR</span></td></tr>`;
+                    }
+                    turGruplar[key].n.push(row.kontrolNoktasiAdi);
+                    turGruplar[key].z.push(new Date(row.devriyeZamani));
+                }
             });
+
+            const pLog = {}, gLog = {};
+            let tamT = 0, eksikT = 0, kTurT = 0, kTurB = 0, supheli = 0, tSureler = [];
+
+            Object.values(turGruplar).forEach(tur => {
+                const eksikler = beklenenNoktalar.filter(n => !tur.n.includes(n));
+                const isEksik = eksikler.length > 0;
+                const h = new Date(tur.t).getHours();
+                const saniye = Math.floor((Math.max(...tur.z) - Math.min(...tur.z)) / 1000);
+
+                if(isEksik) {
+                    eksikT++;
+                    eksikler.forEach(en => aList += `<tr><td class="ps-3">#${tur.no}</td><td>${tur.b}</td><td class="text-danger fw-bold">${en}</td><td class="text-end pe-3 text-muted small">${new Date(tur.t).toLocaleString()}</td></tr>`);
+                } else tamT++;
+
+                // Yeni Gösterge Hesapları
+                if(h >= 2 && h <= 5) { kTurT++; if(!isEksik) kTurB++; }
+                if(saniye > 0 && saniye < 600) supheli++; // 10 dk altı
+                if(saniye > 0) tSureler.push(saniye);
+
+                const gun = new Date(tur.t).toLocaleDateString('tr-TR');
+                if(!gLog[gun]) gLog[gun] = { t:0, s:[] };
+                gLog[gun].t++; if(saniye > 0) gLog[gun].s.push(saniye);
+
+                if(!pLog[tur.b]) pLog[tur.b] = { t:0, tam:0, eksik:0, eNokta:0 };
+                pLog[tur.b].t++; if(isEksik) { pLog[tur.b].eksik++; pLog[tur.b].eNokta += eksikler.length; } else pLog[tur.b].tam++;
+            });
+
+            // Atılmayan Tur (19:00 - 08:00)
+            let atilmayan = 0;
+            let curr = new Date(tarihler[0]); curr.setMinutes(0,0,0);
+            while(curr <= tarihler[tarihler.length-1]){
+                const g = curr.getDay(), h = curr.getHours();
+                if((g===0||g===6) || (h>=19||h<8)){
+                    if(!data.find(x => Math.abs(new Date(x.devriyeZamani)-curr) <= 15*60000)) atilmayan++;
+                }
+                curr.setHours(curr.getHours()+1);
+            }
+
+            // Kartları Bas
+            document.getElementById("statAtilan").innerText = Object.keys(turGruplar).length;
+            document.getElementById("statEksiksiz").innerText = tamT;
+            document.getElementById("statEksik").innerText = eksikT;
+            document.getElementById("statAtilmayan").innerText = atilmayan;
+            document.getElementById("statMukerrer").innerText = mukSay;
+            document.getElementById("statKritikSaat").innerText = kTurT > 0 ? "%" + Math.round((kTurB/kTurT)*100) : "%100";
+            document.getElementById("statGenelOrtalama").innerText = tSureler.length ? saniyeToHms(Math.round(tSureler.reduce((a,b)=>a+b,0)/tSureler.length)) : "00:00";
+            document.getElementById("statSupheliTur").innerText = supheli;
+
+            document.getElementById("bodyAtlananDetay").innerHTML = aList || '<tr><td colspan="4" class="text-center p-3">Atlanan nokta yok.</td></tr>';
+            document.getElementById("bodyMukerrerDetay").innerHTML = mList || '<tr><td colspan="4" class="text-center p-3">Mükerrer kayıt yok.</td></tr>';
+
+            document.getElementById("bodyGunluk").innerHTML = Object.keys(gLog).map(g => {
+                const s = gLog[g].s;
+                return `<tr><td class="ps-4 text-start">${g}</td><td><span class="badge bg-primary px-3 fs-6">${gLog[g].t}</span></td><td class="text-primary">${saniyeToHms(Math.min(...s))}</td><td class="text-danger">${saniyeToHms(Math.max(...s))}</td><td class="text-dark">${saniyeToHms(Math.round(s.reduce((a,b)=>a+b,0)/s.length))}</td></tr>`;
+            }).join('');
+
+            document.getElementById("bodyPerformans").innerHTML = Object.keys(pLog).map(p => {
+                const s = pLog[p], oran = Math.round((s.tam/s.t)*100);
+                return `<tr><td class="ps-4 text-start fw-bold text-dark fs-5">${p}</td><td>${s.t}</td><td class="text-success fw-bold">${s.tam}</td><td class="text-warning fw-bold">${s.eksik}</td><td class="text-danger fw-bold">${s.eNokta}</td><td><div class="d-flex align-items-center"><span class="me-2 fw-bold text-primary">%${oran}</span><div class="progress w-100 shadow-sm"><div class="progress-bar bg-primary" style="width:${oran}%"></div></div></div></td></tr>`;
+            }).join('');
         }
     </script>
 }

@@ -4090,11 +4090,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\C#\\GuvenlikKontrol\\GuvenlikKontrolWeb\\GuvenlikKontrolWeb.csproj",
+      "projectUniqueName": "C:\\Users\\ozay.goktas\\source\\repos\\GuvenlikKontrol\\GuvenlikKontrolWeb\\GuvenlikKontrolWeb.csproj",
       "projectName": "GuvenlikKontrolWeb",
-      "projectPath": "D:\\C#\\GuvenlikKontrol\\GuvenlikKontrolWeb\\GuvenlikKontrolWeb.csproj",
+      "projectPath": "C:\\Users\\ozay.goktas\\source\\repos\\GuvenlikKontrol\\GuvenlikKontrolWeb\\GuvenlikKontrolWeb.csproj",
       "packagesPath": "C:\\Users\\ozay.goktas\\.nuget\\packages\\",
-      "outputPath": "D:\\C#\\GuvenlikKontrol\\GuvenlikKontrolWeb\\obj\\",
+      "outputPath": "C:\\Users\\ozay.goktas\\source\\repos\\GuvenlikKontrol\\GuvenlikKontrolWeb\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

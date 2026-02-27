@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "rInw/QB3ztk=",
+  "dgSpecHash": "sVK9xsf7Y/Y=",
   "success": true,
-  "projectFilePath": "D:\\C#\\GuvenlikKontrol\\GuvenlikKontrolWeb\\GuvenlikKontrolWeb.csproj",
+  "projectFilePath": "C:\\Users\\ozay.goktas\\source\\repos\\GuvenlikKontrol\\GuvenlikKontrolWeb\\GuvenlikKontrolWeb.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\ozay.goktas\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
     "C:\\Users\\ozay.goktas\\.nuget\\packages\\azure.identity\\1.11.4\\azure.identity.1.11.4.nupkg.sha512",

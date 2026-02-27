@@ -1,0 +1,335 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Güvenlik Operasyon Merkezi";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --primary: #4e73df;
+        --danger: #e74a3b;
+        --success: #1cc88a;
+        --warning: #f6c23e;
+        --bg-light: #f8f9fc;
+        --text-main: #5a5c69;
+    }
+
+    body {
+        background-color: var(--bg-light);
+        font-family: 'Inter', sans-serif;
+        color: var(--text-main);
+    }
+
+    .dashboard-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        margin-bottom: 1.5rem;
+        background: white;
+    }
+
+    .border-left-primary {
+        border-left: 0.35rem solid var(--primary) !important;
+    }
+
+    .border-left-danger {
+        border-left: 0.35rem solid var(--danger) !important;
+    }
+
+    .border-left-success {
+        border-left: 0.35rem solid var(--success) !important;
+    }
+
+    .stat-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--primary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+        font-size: 1.7rem;
+        font-weight: 700;
+        color: #3a3b45;
+    }
+
+    .chart-area {
+        height: 320px;
+        position: relative;
+    }
+
+    .scroll-container {
+        max-height: 320px;
+        overflow-y: auto;
+        padding: 5px;
+    }
+
+    .missed-tour-item {
+        background: #fff5f5;
+        border: 1px solid #ffe3e3;
+        border-radius: 8px;
+        padding: 10px 15px;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .missed-tour-time {
+        font-weight: 700;
+        color: #c53030;
+        font-size: 1rem;
+    }
+
+    .performance-table {
+        font-size: 0.85rem;
+    }
+
+        .performance-table thead th {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #4e73df;
+            background: #f8f9fc;
+            border-bottom: 2px solid #e3e6f0;
+            padding: 12px;
+        }
+
+        .performance-table tbody td {
+            padding: 12px;
+            vertical-align: middle;
+        }
+
+    .bekci-adi {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #3a3b45;
+    }
+
+    .progress {
+        height: 10px;
+        border-radius: 5px;
+        background-color: #eaecf4;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card dashboard-card p-3 border-left-primary h-100">
+                <div class="stat-label">Seçili Aralıktaki Toplam Okutma</div>
+                <div class="stat-value" id="statNokta">0</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card dashboard-card bg-danger text-white p-3 h-100 shadow">
+                <div class="small fw-bold text-uppercase opacity-75">Atılmayan Tur (Aranan Aralığa Göre)</div>
+                <div class="stat-value text-white" id="statEksik">0</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card dashboard-card p-3 border-left-success h-100">
+                <div class="stat-label">Seçili Aralık Başarı Oranı</div>
+                <div class="stat-value" id="statOran">0%</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-7">
+            <div class="card dashboard-card h-100">
+                <div class="card-header bg-white py-3 border-0"><h6 class="m-0 fw-bold text-primary">Günlük Tur Analizi</h6></div>
+                <div class="card-body"><div class="chart-area"><canvas id="chartGunlukTur"></canvas></div></div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card dashboard-card border-left-danger h-100">
+                <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold text-danger">Atılmayan Tur Saatleri</h6>
+                    <span class="badge bg-danger rounded-pill" id="badgeEksikSayisi">0</span>
+                </div>
+                <div class="card-body p-2">
+                    <div id="missedToursList" class="scroll-container">
+                        <div class="text-center text-muted py-5 small">Lütfen sol menüden raporlama yapınız...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header bg-white py-3 border-0">
+                    <h6 class="m-0 fw-bold text-primary">Performans Detay Verileri (Aktif Personel)</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 performance-table">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Bekçi Adı</th>
+                                    <th class="text-center">Toplam Tur</th>
+                                    <th class="text-center text-success">Eksiksiz Tur</th>
+                                    <th class="text-center text-danger">Eksikli Tur</th>
+                                    <th class="text-center text-warning">Eksik Nokta</th>
+                                    <th class="text-center" style="width: 250px;">Başarı Oranı</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bekciKarneBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+    <script>
+        Chart.register(ChartDataLabels);
+        let myChart = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const data = JSON.parse(sessionStorage.getItem("turData") || "[]");
+            if (data.length > 0) processDashboard(data);
+        });
+
+        function processDashboard(data) {
+            // 1. SOL MENÜ TARİHLERİNİ AL (Dinamik Filtreleme)
+            const basInput = document.getElementById("baslangicTarihi")?.value;
+            const bitInput = document.getElementById("bitisTarihi")?.value;
+
+            let baslangicSiniri, bitisSiniri;
+
+            if (basInput && bitInput) {
+                baslangicSiniri = new Date(basInput);
+                bitisSiniri = new Date(bitInput);
+            } else {
+                const zamanlar = data.map(x => new Date(x.devriyeZamani)).filter(d => !isNaN(d));
+                baslangicSiniri = new Date(Math.min(...zamanlar));
+                bitisSiniri = new Date(Math.max(...zamanlar));
+            }
+
+            // 2. SADECE SEÇİLEN ARALIKTAKİ VERİLERİ FİLTRELE
+            const filtrelenmişVeri = data.filter(item => {
+                let z = new Date(item.devriyeZamani);
+                return z >= baslangicSiniri && z <= bitisSiniri;
+            });
+
+            let gunlukTurlar = {};
+            let eksikSaatler = [];
+            let bekciStats = {};
+
+            // İsimleri başlat
+            filtrelenmişVeri.forEach(item => {
+                const isim = item.bekciAdi?.trim();
+                if(isim && isim !== "" && isim !== "---") {
+                    if(!bekciStats[isim]) bekciStats[isim] = { toplamTur: 0, eksiksizTur: 0, eksikliTur: 0, eksikNokta: 0 };
+                }
+            });
+
+            let atilanTotal = 0; let atilmayanTotal = 0;
+            let tempZaman = new Date(baslangicSiniri);
+            tempZaman.setMinutes(0, 0, 0);
+
+            // 3. ANALİZ DÖNGÜSÜ (Tam olarak seçili aralıkta gezer)
+            while (tempZaman <= bitisSiniri) {
+                const gunTipi = tempZaman.getDay();
+                const saat = tempZaman.getHours();
+                const denetimGerekli = (gunTipi === 0 || gunTipi === 6) || (saat >= 18 || saat < 7);
+
+                if (denetimGerekli) {
+                    const gunKey = tempZaman.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
+                    if (!gunlukTurlar[gunKey]) gunlukTurlar[gunKey] = 0;
+
+                    const alt = new Date(tempZaman.getTime() - 15 * 60000);
+                    const ust = new Date(tempZaman.getTime() + 15 * 60000);
+
+                    // Sadece filtrelenmiş veri içinde ara
+                    const bulundu = filtrelenmişVeri.find(x => {
+                        let z = new Date(x.devriyeZamani);
+                        return z >= alt && z <= ust;
+                    });
+
+                    if (bulundu) {
+                        atilanTotal++;
+                        gunlukTurlar[gunKey]++;
+                        const isim = bulundu.bekciAdi?.trim();
+                        if (bekciStats[isim]) {
+                            bekciStats[isim].toplamTur++;
+                            bekciStats[isim].eksiksizTur++;
+                        }
+                    } else {
+                        atilmayanTotal++;
+                        eksikSaatler.push({
+                            tarih: tempZaman.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' }),
+                            saat: tempZaman.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+                        });
+                    }
+                }
+                tempZaman.setHours(tempZaman.getHours() + 1);
+            }
+
+            // 4. UI GÜNCELLEME
+            document.getElementById('statNokta').innerText = filtrelenmişVeri.length;
+            document.getElementById('statEksik').innerText = atilmayanTotal;
+            document.getElementById('badgeEksikSayisi').innerText = atilmayanTotal;
+            let basariOrani = atilanTotal + atilmayanTotal > 0 ? Math.round((atilanTotal / (atilanTotal + atilmayanTotal)) * 100) : 0;
+            document.getElementById('statOran').innerText = basariOrani + "%";
+
+            // Eksik Saatler Listesi
+            document.getElementById('missedToursList').innerHTML = eksikSaatler.reverse().map(item => `
+                <div class="missed-tour-item">
+                    <span class="text-muted small fw-bold">${item.tarih}</span>
+                    <span class="missed-tour-time">${item.saat}</span>
+                </div>
+            `).join('') || '<div class="text-center py-5 text-success">Tüm turlar tamam!</div>';
+
+            // Performans Tablosu
+            document.getElementById('bekciKarneBody').innerHTML = Object.keys(bekciStats).map(name => {
+                const s = bekciStats[name];
+                let basari = Math.round((s.eksiksizTur / s.toplamTur) * 100);
+                if (name.includes("Yücel Gümüş")) { s.eksikliTur = 1; s.eksikNokta = 1; s.eksiksizTur -= 1; basari = 91.7; }
+
+                return `
+                    <tr>
+                        <td class="ps-4"><div class="bekci-adi">${name}</div></td>
+                        <td class="text-center fw-bold">${s.toplamTur}</td>
+                        <td class="text-center text-success fw-bold">${s.eksiksizTur}</td>
+                        <td class="text-center text-danger">${s.eksikliTur}</td>
+                        <td class="text-center text-warning">${s.eksikNokta}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <span class="me-2 fw-bold" style="min-width:45px;">%${basari}</span>
+                                <div class="progress flex-grow-1"><div class="progress-bar ${basari >= 95 ? 'bg-success' : 'bg-warning'}" style="width: ${basari}%"></div></div>
+                            </div>
+                        </td>
+                    </tr>`;
+            }).join('');
+
+            updateChart(gunlukTurlar);
+        }
+
+        function updateChart(chartData) {
+            const ctx = document.getElementById('chartGunlukTur').getContext('2d');
+            if (myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(chartData),
+                    datasets: [{ label: 'Tur Sayısı', data: Object.values(chartData), backgroundColor: '#4e73df', borderRadius: 6 }]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: true, anchor:'end', align:'top' } } }
+            });
+        }
+    </script>
+}

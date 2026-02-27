@@ -1,0 +1,17 @@
+﻿@page
+@model GuvenlikKontrolWeb.Pages.VeriYukleModel
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white"><h4>ZKGuard Excel Aktarımı</h4></div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                <input type="file" asp-for="ExcelDosyasi" class="form-control mb-3" accept=".xls,.xlsx" />
+                <button type="submit" class="btn btn-primary w-100">Verileri SQL'e Aktar</button>
+            </form>
+            @if (Model.BilgiMesaji != null)
+            {
+                <div class="alert alert-info mt-3">@Model.BilgiMesaji</div>
+            }
+        </div>
+    </div>
+</div>

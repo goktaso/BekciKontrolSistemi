@@ -1,0 +1,134 @@
+﻿@page "/AtilmayanTur"
+
+@{
+    ViewData["Title"] = "Atılmayan Tur Detay Raporu";
+}
+
+<div class="container-fluid">
+    @* Üst Başlık ve Aksiyon Butonları (Senin standart formatın) *@
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h2 class="fw-bold text-dark m-0">
+                <i class="bi bi-calendar-x text-danger me-2"></i>Atılmayan Tur Detayları
+            </h2>
+            <small class="text-muted" id="raporBilgi">Dashboard analizine göre gerçekleşmeyen turlar</small>
+        </div>
+        <div class="col-auto">
+            @* Senin istediğin standart butonlar *@
+            <button class="btn btn-outline-success shadow-sm" onclick="exportToExcel()">
+                <i class="bi bi-file-earmark-excel me-1"></i> Excel'e Aktar
+            </button>
+            <button class="btn btn-outline-dark shadow-sm ms-2" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i> Yazdır
+            </button>
+        </div>
+    </div>
+
+    @* Özet Bilgi Kartları *@
+    <div class="row mb-4 g-3">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-danger text-white p-3">
+                <div class="small fw-bold text-uppercase opacity-75">Toplam Atılmayan Tur</div>
+                <div class="h2 fw-bold m-0" id="toplamEksik">0</div>
+            </div>
+        </div>
+    </div>
+
+    @* Detay Tablosu *@
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="atilmayanTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Denetim Tarihi</th>
+                            <th>Hedef Tur Saati</th>
+                            <th>Denetim Kuralı</th>
+                            <th>Durum</th>
+                            <th class="text-end pe-4">Açıklama</th>
+                        </tr>
+                    </thead>
+                    <tbody id="atilmayanBody">
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">Analiz yapılıyor, lütfen bekleyin...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const data = JSON.parse(sessionStorage.getItem("turData") || "[]");
+            if (data.length > 0) {
+                analizEtVeListele(data);
+            } else {
+                document.getElementById('atilmayanBody').innerHTML = '<tr><td colspan="5" class="text-center py-5">Veri bulunamadı.</td></tr>';
+            }
+        });
+
+        function analizEtVeListele(data) {
+            const tableBody = document.getElementById('atilmayanBody');
+            tableBody.innerHTML = "";
+
+            // 1. TARİH SINIRLARINI BELİRLE (Dashboard'daki mantığın aynısı)
+            const zamanlar = data.map(x => new Date(x.devriyeZamani)).filter(d => !isNaN(d));
+            let tempZaman = new Date(Math.min(...zamanlar));
+            const bitisSiniri = new Date(Math.max(...zamanlar));
+            tempZaman.setMinutes(0, 0, 0);
+
+            let atilmayanCount = 0;
+
+            // 2. ANALİZ DÖNGÜSÜ
+            while (tempZaman <= bitisSiniri) {
+                const gunTipi = tempZaman.getDay();
+                const saat = tempZaman.getHours();
+
+                // VBA ve Dashboard'daki kural: Hafta sonu 24s, Hafta içi 18-07
+                const denetimGerekli = (gunTipi === 0 || gunTipi === 6) || (saat >= 18 || saat < 7);
+
+                if (denetimGerekli) {
+                    const alt = new Date(tempZaman.getTime() - 15 * 60000);
+                    const ust = new Date(tempZaman.getTime() + 15 * 60000);
+
+                    // Bu zaman aralığında okutma var mı?
+                    const bulundu = data.find(x => {
+                        let z = new Date(x.devriyeZamani);
+                        return z >= alt && z <= ust;
+                    });
+
+                    if (!bulundu) {
+                        atilmayanCount++;
+                        const satir = `
+                            <tr>
+                                <td class="ps-4 fw-bold text-dark">${tempZaman.toLocaleDateString('tr-TR')}</td>
+                                <td><span class="badge bg-light text-danger border border-danger border-opacity-25 fs-6">${tempZaman.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} Turu</span></td>
+                                <td><small class="text-muted">${gunTipi === 0 || gunTipi === 6 ? 'Hafta Sonu Denetimi' : 'Mesai Dışı Denetim'}</small></td>
+                                <td><span class="badge bg-danger">ATILMADI</span></td>
+                                <td class="text-end pe-4 text-muted small">Bu saat diliminde okutma kaydı bulunamadı.</td>
+                            </tr>
+                        `;
+                        tableBody.insertAdjacentHTML('beforeend', satir);
+                    }
+                }
+                tempZaman.setHours(tempZaman.getHours() + 1);
+            }
+
+            document.getElementById('toplamEksik').innerText = atilmayanCount;
+
+            if (atilmayanCount === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-success fw-bold">Tüm turlar başarıyla tamamlanmış!</td></tr>';
+            }
+        }
+
+        // Standart Excel'e Aktar Fonksiyonu
+        function exportToExcel() {
+            let table = document.getElementById("atilmayanTable");
+            let html = table.outerHTML;
+            window.open('data:application/vnd.ms-excel,' + encodeURIComponent(html));
+        }
+    </script>
+}

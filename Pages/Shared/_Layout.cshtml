@@ -52,8 +52,8 @@
                 }
 
                 .sidebar .nav-link.active {
-                    background: #00d2ff;
-                    color: white;
+                    background: #00d2ff !important;
+                    color: white !important;
                     box-shadow: 0 4px 15px rgba(0,210,255,0.4);
                 }
 
@@ -144,8 +144,9 @@
                 <li><a class="nav-link" href="#" onclick="gitEksikNokta()"><i class="bi bi-exclamation-triangle me-2"></i> Eksik Nokta</a></li>
                 <li><a class="nav-link" href="/GunlukTur"><i class="bi bi-calendar3 me-2"></i> Günlük Tur</a></li>
                 <li><a class="nav-link" href="/BekciPerformans"><i class="bi bi-star me-2"></i> Bekçi Performansı</a></li>
-                @* --- YENİ EKLENEN BUTON --- *@
                 <li><a class="nav-link" href="/AtilmayanTur"><i class="bi bi-calendar-x me-2"></i> Atılmayan Tur</a></li>
+                @* --- Mükerrer Tur Linki Eklendi --- *@
+                <li><a class="nav-link" href="/MukerrerNoktalar"><i class="bi bi-layers-half me-2"></i> Mükerrer Tur</a></li>
             </ul>
 
             <div class="filter-section">
@@ -186,7 +187,6 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
@@ -196,19 +196,12 @@
                 e.preventDefault();
                 $("#wrapper").toggleClass("toggled");
             });
-
-            $(".nav-link").click(function() {
-                if ($(window).width() <= 992) {
-                    $("#wrapper").removeClass("toggled");
-                }
-            });
         });
 
         document.addEventListener("DOMContentLoaded", function () {
             const currentPath = window.location.pathname;
             document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-                if (link.getAttribute('href') === currentPath ||
-                   (currentPath === "/" && link.getAttribute('href') === "/Index")) {
+                if (link.getAttribute('href') === currentPath || (currentPath === "/" && link.getAttribute('href') === "/Index")) {
                     link.classList.add('active');
                 }
             });
@@ -221,17 +214,23 @@
             const bas = document.getElementById("menuBas").value;
             const bit = document.getElementById("menuBit").value;
             if (!bas || !bit) return alert("⚠️ Lütfen başlangıç ve bitiş tarihlerini seçiniz!");
+
             const btn = document.getElementById("btnRapor");
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Analiz Ediliyor...';
+
             try {
                 const res = await fetch(`/api/TurAnaliz?baslangic=${encodeURIComponent(bas)}&bitis=${encodeURIComponent(bit)}`);
                 if (!res.ok) throw new Error("Veri çekilemedi!");
                 const data = await res.json();
+
                 localStorage.setItem("baslangic", bas);
                 localStorage.setItem("bitis", bit);
+                // Önemli: Veriyi string olarak saklıyoruz
                 sessionStorage.setItem("turData", JSON.stringify(data));
-                window.location.href = "/Index";
+
+                // Sayfayı yenileyerek yeni verinin tablolara yansımasını sağla
+                window.location.reload();
             } catch (err) {
                 console.error("Hata:", err);
                 alert("❌ Veri getirilirken bir hata oluştu.");
@@ -243,17 +242,21 @@
 
         function gitEksikNokta() {
             if (!sessionStorage.getItem("turData")) {
-                alert("🔍 Dashboard verisi bulunamadı.");
+                alert("🔍 Veri bulunamadı. Lütfen raporu güncelleyin.");
                 return;
             }
             window.location.href = "/EksikNokta";
         }
 
         function exportToExcel() {
-            const table = document.querySelector("table");
-            if (!table) return alert("❌ Aktarılacak veri tablosu bulunamadı!");
-            const wb = XLSX.utils.table_to_book(table, { sheet: "Guvenlik_Tur_Raporu" });
-            XLSX.writeFile(wb, `Tur_Raporu_${new Date().toISOString().split('T')[0]}.xlsx`);
+            if (typeof window.exportToExcelLocal === 'function') {
+                window.exportToExcelLocal();
+            } else {
+                const table = document.querySelector("table");
+                if (!table) return alert("❌ Aktarılacak tablo bulunamadı!");
+                const wb = XLSX.utils.table_to_book(table, { sheet: "Rapor" });
+                XLSX.writeFile(wb, `Guvenlik_Raporu_${new Date().toISOString().split('T')[0]}.xlsx`);
+            }
         }
 
         function exportToPDF() {
@@ -261,9 +264,9 @@
             if (!element) return;
             const opt = {
                 margin: 0.3,
-                filename: 'Guvenlik_Tur_Analizi.pdf',
+                filename: 'Guvenlik_Raporu.pdf',
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
+                html2canvas: { scale: 2 },
                 jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
             html2pdf().set(opt).from(element).save();

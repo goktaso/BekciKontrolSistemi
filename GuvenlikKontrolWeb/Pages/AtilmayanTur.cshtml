@@ -88,7 +88,7 @@
                 const saat = tempZaman.getHours();
 
                 // VBA ve Dashboard'daki kural: Hafta sonu 24s, Hafta içi 18-07
-                const denetimGerekli = (gunTipi === 0 || gunTipi === 6) || (saat >= 18 || saat < 7);
+                const denetimGerekli = (gunTipi === 0 || gunTipi === 6) || (saat >= 19 || saat < 7);
 
                 if (denetimGerekli) {
                     const alt = new Date(tempZaman.getTime() - 15 * 60000);

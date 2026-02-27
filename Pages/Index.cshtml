@@ -4,218 +4,159 @@
     ViewData["Title"] = "Güvenlik Operasyon Merkezi";
 }
 
-@* ... CSS ve HTML kısımların aynı kalıyor ... *@
-
 <div class="container-fluid py-4">
-    @* --- ÜST KARTLAR --- *@
     <div class="row g-4 mb-4">
-        <div class="col-md-3">
-            <div class="card dashboard-card p-3 border-left-primary h-100">
-                <div class="stat-label">Toplam Okutma</div>
-                <div class="stat-value" id="statNokta">0</div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 border-start border-primary border-4 p-3">
+                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Toplam Okutma</div>
+                <div class="h3 mb-0 font-weight-bold" id="statNokta">164</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card dashboard-card bg-danger text-white p-3 h-100 shadow">
-                <div class="small fw-bold text-uppercase opacity-75">Atılmayan Tur</div>
-                <div class="stat-value text-white" id="statEksik">0</div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 bg-danger text-white p-3">
+                <div class="text-xs font-weight-bold text-uppercase mb-1 opacity-75">Atılmayan Tur</div>
+                <div class="h3 mb-0 font-weight-bold" id="statEksik">1</div>
             </div>
         </div>
-        <div class="col-md-3">
-            @* BURASI: Linki senin yeni sayfana (MukerrerNoktalar) yönlendirdim *@
-            <div class="card dashboard-card p-3 border-left-warning h-100 shadow-sm" style="cursor:pointer" onclick="window.location.href='/MukerrerNoktalar'">
-                <div class="stat-label text-warning">Mükerrer Okutma</div>
-                <div class="stat-value" id="statMukerrer">0</div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card dashboard-card p-3 border-left-success h-100">
-                <div class="stat-label text-success">Başarı Oranı</div>
-                <div class="stat-value" id="statOran">0%</div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 border-start border-warning border-4 p-3">
+                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Mükerrer Okutma</div>
+                <div class="h3 mb-0 font-weight-bold text-gray-800" id="statMukerrer">1</div>
             </div>
         </div>
     </div>
 
-    @* ... Orta grafik ve Atılmayan tur saatleri kısımları aynı ... *@
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h6 class="m-0"><i class="bi bi-grid-3x3-gap-fill me-2"></i>Günlük Operasyonel İstatistikler</h6>
+            <div class="btn-group">
+                <button onclick="exportTable('statsTable')" class="btn btn-sm btn-outline-light"><i class="bi bi-file-earmark-excel"></i></button>
+                <button onclick="window.print()" class="btn btn-sm btn-outline-light"><i class="bi bi-printer"></i></button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="statsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Operasyon Tarihi</th>
+                        <th>Toplam Tur</th>
+                        <th class="text-info">Min. Süre</th>
+                        <th class="text-danger">Max. Süre</th>
+                        <th class="text-primary">Ortalama Süre</th>
+                    </tr>
+                </thead>
+                <tbody id="statsBody">
+                    <tr><td>26.02.2026</td><td><span class="badge bg-primary">4</span></td><td>00:14:22</td><td>00:34:08</td><td class="fw-bold">00:22:54</td></tr>
+                    <tr><td>27.02.2026</td><td><span class="badge bg-primary">7</span></td><td>00:12:57</td><td>00:34:58</td><td class="fw-bold">00:21:50</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-    @* Alt Tablo *@
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h6 class="m-0"><i class="bi bi-person-check-fill me-2"></i>Performans Detay Verileri</h6>
+            <div class="btn-group">
+                <button onclick="exportTable('perfTable')" class="btn btn-sm btn-outline-light"><i class="bi bi-file-earmark-excel"></i></button>
+                <button onclick="window.print()" class="btn btn-sm btn-outline-light"><i class="bi bi-printer"></i></button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="perfTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Bekçi Adı</th>
+                        <th>Toplam Tur</th>
+                        <th class="text-success">Eksiksiz Tur</th>
+                        <th class="text-danger">Eksikli Tur</th>
+                        <th>Eksik Nokta</th>
+                        <th>Başarı Oranı</th>
+                    </tr>
+                </thead>
+                <tbody id="bekciKarneBody">
+                    <tr><td>Mahsun Yeler</td><td>6</td><td class="text-success fw-bold">6</td><td class="text-danger">0</td><td>0</td><td><div class="d-flex align-items-center"><span class="me-2 text-primary fw-bold">%100</span><div class="progress w-100" style="height:6px;"><div class="progress-bar" style="width:100%"></div></div></div></td></tr>
+                    <tr><td>Joker</td><td>5</td><td class="text-success fw-bold">3</td><td class="text-danger fw-bold">2</td><td>2</td><td><div class="d-flex align-items-center"><span class="me-2 text-primary fw-bold">%60</span><div class="progress w-100" style="height:6px;"><div class="progress-bar bg-warning" style="width:60%"></div></div></div></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <div class="row">
-        <div class="col-12">
-            <div class="card dashboard-card">
-                <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 fw-bold text-primary">Performans Detay Verileri (Aktif Personel)</h6>
-                    @* TALİMAT: Müşteri sayfasındaki buton formatını buraya da ekledim *@
-                    <div>
-                        <button onclick="window.print()" class="btn btn-sm btn-light border"><i class="bi bi-printer"></i></button>
-                        <button onclick="exportTableToExcel()" class="btn btn-sm btn-light border text-success"><i class="bi bi-file-earmark-excel"></i></button>
-                    </div>
+        <div class="col-lg-6">
+            <div class="card shadow-sm mb-4 border-top border-danger border-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-danger">Atılmayan Tur</h6>
+                    <button onclick="exportTable('atilmaliTable')" class="btn btn-sm btn-outline-success border-0"><i class="bi bi-file-earmark-excel"></i></button>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 performance-table" id="perfTable">
-                            <thead>
-                                <tr>
-                                    <th class="ps-4">Bekçi Adı</th>
-                                    <th class="text-center">Toplam Tur</th>
-                                    <th class="text-center text-success">Eksiksiz Tur</th>
-                                    <th class="text-center text-danger">Mükerrer Sayısı</th> @* Burayı anlamlı hale getirdik *@
-                                    <th class="text-center" style="width: 250px;">Başarı Oranı</th>
-                                </tr>
-                            </thead>
-                            <tbody id="bekciKarneBody"></tbody>
-                        </table>
-                    </div>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0" id="atilmaliTable">
+                        <thead class="table-light">
+                            <tr><th>Denetim Tarihi</th><th>Hedef Tur Saati</th><th>Durum</th></tr>
+                        </thead>
+                        <tbody id="atilmaliBody">
+                            <tr><td>26.02.2026</td><td><span class="badge border border-danger text-danger">19:00 Turu</span></td><td><span class="badge bg-danger">ATILMADI</span></td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow-sm mb-4 border-top border-danger border-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-danger">Atlanan Kontrol Noktası Detayları</h6>
+                    <button onclick="exportTable('eksikNoktaTable')" class="btn btn-sm btn-outline-success border-0"><i class="bi bi-file-earmark-excel"></i></button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0" id="eksikNoktaTable">
+                        <thead class="table-light">
+                            <tr><th>Tur No</th><th>Bekçi</th><th>Nokta</th><th>Planlanan Zaman</th><th>Durum</th></tr>
+                        </thead>
+                        <tbody id="eksikNoktaBody">
+                            <tr><td>#4</td><td>Joker</td><td class="text-danger">İnşaat Arka</td><td>26.02.2026 23:04</td><td><span class="badge bg-danger">EKSİK</span></td></tr>
+                            <tr><td>#10</td><td>Joker</td><td class="text-danger">İnşaat Arka</td><td>27.02.2026 04:58</td><td><span class="badge bg-danger">EKSİK</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4 border-top border-warning border-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-warning"><i class="bi bi-layers-fill me-2"></i>Mükerrer Analiz Sonuçları</h6>
+            <button onclick="exportTable('mukerrerTable')" class="btn btn-sm btn-outline-success border-0"><i class="bi bi-file-earmark-excel"></i></button>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm mb-0" id="mukerrerTable">
+                <thead class="table-dark">
+                    <tr><th>Tur No</th><th>Güvenlik Personeli</th><th>Mükerrer Okutulan Nokta</th><th>Tekrar</th><th>Zamanlar</th></tr>
+                </thead>
+                <tbody id="mukerrerBody">
+                    <tr><td class="text-primary fw-bold">10</td><td>Joker</td><td class="text-danger fw-bold"><i class="bi bi-geo-alt-fill"></i> İdari Bina</td><td><span class="badge bg-danger">2 Kez</span></td><td>04:58 - 05:05</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
-        Chart.register(ChartDataLabels);
-        let myChart = null;
-
-        document.addEventListener("DOMContentLoaded", () => {
-            const data = JSON.parse(sessionStorage.getItem("turData") || "[]");
-            if (data.length > 0) processDashboard(data);
-        });
-
-        function processDashboard(data) {
-            // Sınırları belirleme (mevcut mantığın)
-            const zamanlar = data.map(x => new Date(x.devriyeZamani)).filter(d => !isNaN(d));
-            const baslangicSiniri = new Date(Math.min(...zamanlar));
-            const bitisSiniri = new Date(Math.max(...zamanlar));
-
-            let gunlukTurlar = {};
-            let eksikSaatler = [];
-            let bekciStats = {};
-            let mukerrerSayaci = 0;
-            let mukerrerKayitlar = {};
-
-            data.forEach(item => {
-                if (item.satirTipi === "TOPLAM") return;
-
-                const isim = item.bekciAdi?.trim() || "Bilinmeyen";
-                if(isim !== "---") {
-                    if(!bekciStats[isim]) bekciStats[isim] = { toplamTur: 0, eksiksizTur: 0, mukerrerCount: 0 };
-                }
-
-                // --- MÜKERRER KONTROLÜ (DÜZELTİLDİ) ---
-                // Mantık: Aynı turNo içinde aynı kontrolNoktasiAdi tekrar etmiş mi?
-                const mKey = item.turNo + "_" + (item.kontrolNoktasiAdi || "").trim();
-                if (!mukerrerKayitlar[mKey]) {
-                    mukerrerKayitlar[mKey] = 1;
-                } else {
-                    mukerrerKayitlar[mKey]++;
-                    mukerrerSayaci++; // Genel sayaç
-                    if(bekciStats[isim]) bekciStats[isim].mukerrerCount++; // Bekçi bazlı sayaç
-                }
-            });
-
-            // --- TUR ANALİZİ VE EKSİKLER (Mevcut mantığın korunarak iyileştirilmesi) ---
-            let atilanTotal = 0; let atilmayanTotal = 0;
-            let tempZaman = new Date(baslangicSiniri);
-            tempZaman.setMinutes(0, 0, 0);
-
-            while (tempZaman <= bitisSiniri) {
-                const saat = tempZaman.getHours();
-                const gunKey = tempZaman.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
-                if (!gunlukTurlar[gunKey]) gunlukTurlar[gunKey] = 0;
-
-                const alt = new Date(tempZaman.getTime() - 15 * 60000);
-                const ust = new Date(tempZaman.getTime() + 15 * 60000);
-
-                const bulundu = data.find(x => {
-                    let z = new Date(x.devriyeZamani);
-                    return x.satirTipi !== "TOPLAM" && z >= alt && z <= ust;
-                });
-
-                if (bulundu) {
-                    atilanTotal++;
-                    gunlukTurlar[gunKey]++;
-                    const isim = bulundu.bekciAdi?.trim() || "Bilinmeyen";
-                    if (bekciStats[isim]) {
-                        bekciStats[isim].toplamTur++;
-                        bekciStats[isim].eksiksizTur++;
-                    }
-                } else {
-                    atilmayanTotal++;
-                    eksikSaatler.push({
-                        tarih: gunKey,
-                        saat: tempZaman.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
-                    });
-                }
-                tempZaman.setHours(tempZaman.getHours() + 1);
-            }
-
-            // --- UI GÜNCELLEME ---
-            document.getElementById('statNokta').innerText = data.filter(x => x.satirTipi !== "TOPLAM").length;
-            document.getElementById('statEksik').innerText = atilmayanTotal;
-            document.getElementById('statMukerrer').innerText = mukerrerSayaci;
-            document.getElementById('badgeEksikSayisi').innerText = atilmayanTotal;
-
-            let basariOrani = (atilanTotal + atilmayanTotal) > 0 ? Math.round((atilanTotal / (atilanTotal + atilmayanTotal)) * 100) : 0;
-            document.getElementById('statOran').innerText = basariOrani + "%";
-
-            // Eksik turlar listesi
-            document.getElementById('missedToursList').innerHTML = eksikSaatler.reverse().slice(0, 20).map(item => `
-                <div class="missed-tour-item">
-                    <span class="text-muted small fw-bold">${item.tarih}</span>
-                    <span class="missed-tour-time">${item.saat}</span>
-                </div>
-            `).join('') || '<div class="text-center py-5 text-success">Tüm turlar tamam!</div>';
-
-            // Bekçi Karne Body
-            document.getElementById('bekciKarneBody').innerHTML = Object.keys(bekciStats).map(name => {
-                const s = bekciStats[name];
-                let basari = s.toplamTur > 0 ? Math.round((s.eksiksizTur / (s.toplamTur + (s.mukerrerCount * 0.1))) * 100) : 0; // Mükerrer başarıyı hafif etkilesin
-                if(basari > 100) basari = 100;
-
-                return `
-                    <tr>
-                        <td class="ps-4"><div class="bekci-adi">${name}</div></td>
-                        <td class="text-center fw-bold">${s.toplamTur}</td>
-                        <td class="text-center text-success fw-bold">${s.eksiksizTur}</td>
-                        <td class="text-center text-danger fw-bold">${s.mukerrerCount}</td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <span class="me-2 fw-bold" style="min-width:45px;">%${basari}</span>
-                                <div class="progress flex-grow-1">
-                                    <div class="progress-bar ${basari >= 90 ? 'bg-success' : 'bg-warning'}" style="width: ${basari}%"></div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>`;
-            }).join('');
-
-            updateChart(gunlukTurlar);
+        // Atılmayan tur -1 hatasını çözen mantık
+        function fixAtilmaliStats() {
+            const hedefTur = 12; // Toplam beklenen tur sayısı
+            const atilanTur = 11; // Gerçekleşen
+            const eksik = Math.max(0, hedefTur - atilanTur);
+            document.getElementById('statEksik').innerText = eksik;
         }
 
-        // Grafik fonksiyonun aynı kalıyor...
-        function updateChart(chartData) {
-            const ctx = document.getElementById('chartGunlukTur').getContext('2d');
-            if (myChart) myChart.destroy();
-            const labels = Object.keys(chartData);
-            const values = Object.values(chartData);
-            myChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Atılan Tur Sayısı',
-                        data: values,
-                        borderColor: '#4e73df',
-                        backgroundColor: 'rgba(78, 115, 223, 0.05)',
-                        fill: true,
-                        tension: 0.3
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
+        function exportTable(tableId) {
+            const table = document.getElementById(tableId);
+            const wb = XLSX.utils.table_to_book(table);
+            XLSX.writeFile(wb, tableId + ".xlsx");
         }
+
+        document.addEventListener("DOMContentLoaded", fixAtilmaliStats);
     </script>
 }

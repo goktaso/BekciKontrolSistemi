@@ -1,17 +1,68 @@
 ﻿@page
 @model GuvenlikKontrolWeb.Pages.VeriYukleModel
-<div class="container mt-5">
-    <div class="card shadow">
-        <div class="card-header bg-dark text-white"><h4>ZKGuard Excel Aktarımı</h4></div>
-        <div class="card-body">
-            <form method="post" enctype="multipart/form-data">
-                <input type="file" asp-for="ExcelDosyasi" class="form-control mb-3" accept=".xls,.xlsx" />
-                <button type="submit" class="btn btn-primary w-100">Verileri SQL'e Aktar</button>
-            </form>
-            @if (Model.BilgiMesaji != null)
-            {
-                <div class="alert alert-info mt-3">@Model.BilgiMesaji</div>
-            }
+@{
+    ViewData["Title"] = "Veri ve Logo Yönetimi";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        @if (!string.IsNullOrEmpty(Model.BilgiMesaji))
+        {
+            <div class="col-12">
+                <div class="alert @(Model.BilgiMesaji.Contains("Hata") ? "alert-danger" : "alert-success") alert-dismissible fade show shadow-sm" role="alert">
+                    <i class="bi @(Model.BilgiMesaji.Contains("Hata") ? "bi-exclamation-octagon" : "bi-check-circle") me-2"></i>
+                    @Model.BilgiMesaji
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        }
+
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-dark text-white fw-bold d-flex align-items-center">
+                    <i class="bi bi-file-earmark-excel me-2 text-success"></i> EXCEL VERİ YÜKLEME
+                </div>
+                <div class="card-body bg-light">
+                    <p class="small text-muted">Bekçi tur kayıtlarını içeren Excel dosyasını seçerek sisteme aktarabilirsiniz.</p>
+                    <form method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-secondary">Excel Dosyası (.xlsx, .xls)</label>
+                            <input type="file" asp-for="ExcelDosyasi" class="form-control border-info" accept=".xls,.xlsx" required />
+                        </div>
+                        <button type="submit" class="btn btn-success w-100 fw-bold shadow-sm">
+                            <i class="bi bi-cloud-upload me-2"></i> VERİLERİ SİSTEME İŞLE
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-dark text-white fw-bold d-flex align-items-center">
+                    <i class="bi bi-image me-2 text-info"></i> ŞİRKET LOGOSU YÖNETİMİ
+                </div>
+                <div class="card-body bg-light text-center">
+                    <p class="small text-muted">Sidebar'da görünecek olan şirket logosunu buradan güncelleyebilirsiniz.</p>
+
+                    <div class="mb-3 p-2 bg-secondary rounded shadow-inner" style="background-color: #e9ecef !important;">
+                        <img src="/images/unlu-logo.png?v=@DateTime.Now.Ticks"
+                             alt="Güncel Logo"
+                             style="max-height: 60px; object-fit: contain;"
+                             onerror="this.src='/images/default-logo.png';">
+                    </div>
+
+                    <form method="post" asp-page-handler="LogoYukle" enctype="multipart/form-data">
+                        <div class="mb-3 text-start">
+                            <label class="form-label small fw-bold text-secondary">Yeni Logo Seç (.png)</label>
+                            <input type="file" asp-for="LogoDosyasi" class="form-control border-info" accept=".png" required />
+                        </div>
+                        <button type="submit" class="btn btn-info text-white w-100 fw-bold shadow-sm">
+                            <i class="bi bi-arrow-repeat me-2"></i> LOGOYU GÜNCELLE
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>

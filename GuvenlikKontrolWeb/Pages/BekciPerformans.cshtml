@@ -57,118 +57,110 @@
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        let myChart;
+        $(document).ready(function () {
+            // Sayfa açılır açılmaz veriyi çek
+            veriyiYukle();
 
-        document.addEventListener("DOMContentLoaded", function() {
-            // Tarih bilgisini göstergeye yaz
-            const bas = localStorage.getItem("baslangic");
-            const bit = localStorage.getItem("bitis");
-            if(bas && bit) {
-                document.getElementById("tarihGosterge").innerHTML = `📅 Dönem: ${new Date(bas).toLocaleDateString("tr-TR")} - ${new Date(bit).toLocaleDateString("tr-TR")}`;
-                loadPerformans();
-            }
+            // Sol menüdeki butona basıldığında Layout sayfayı reload ediyor.
+            // Ama biz ne olur ne olmaz butonu burada da dinleyelim.
+            $(document).on('click', '#btnRapor', function () {
+                setTimeout(veriyiYukle, 1000);
+            });
         });
 
-        async function loadPerformans() {
-            const bas = localStorage.getItem("baslangic");
-            const bit = localStorage.getItem("bitis");
+        async function veriyiYukle() {
+            // 1. Önce hafızayı (Session) kontrol et
+            let rawData = sessionStorage.getItem("performansData");
 
-            try {
-                const response = await fetch(`/api/BekciPerformans?baslangic=${bas}&bitis=${bit}`);
-                const data = await response.json();
+            // 2. Hafıza boşsa veya veri yoksa API'ye "ZORLA" git
+            if (!rawData || rawData === "[]") {
+                console.log("Hafıza boş, API'den taze veri isteniyor...");
 
-                const statusInfo = document.getElementById("statusInfo");
-                const tbody = document.getElementById("perfBody");
+                // Menüdeki tarihleri al, yoksa localStorage'dakileri dene
+                const bas = $("#menuBas").val() || localStorage.getItem("baslangic");
+                const bit = $("#menuBit").val() || localStorage.getItem("bitis");
 
-                if (!data || data.length === 0) {
-                    statusInfo.innerText = "Seçilen tarihlerde analiz edilecek bekçi verisi bulunamadı.";
-                    statusInfo.className = "alert alert-warning";
-                    statusInfo.style.display = "block";
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center p-4">Veri yok.</td></tr>';
-                    return;
+                if (bas && bit) {
+                    try {
+                        // API'ye taze istek atıyoruz
+                        const res = await fetch(`/api/BekciPerformans?baslangic=${encodeURIComponent(bas)}&bitis=${encodeURIComponent(bit)}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            if(data && data.length > 0) {
+                                sessionStorage.setItem("performansData", JSON.stringify(data));
+                                rawData = JSON.stringify(data);
+                            }
+                        }
+                    } catch (err) {
+                        console.error("API Bağlantı Hatası:", err);
+                    }
                 }
+            }
 
-                statusInfo.style.display = "none";
-
-                // 1. Tabloyu Doldur
-                tbody.innerHTML = data.map(item => `
-                    <tr>
-                        <td class="ps-4 fw-bold text-secondary">${item.bekciAdi}</td>
-                        <td class="text-center">${item.toplamTur}</td>
-                        <td class="text-center text-success fw-bold">${item.eksiksizTur}</td>
-                        <td class="text-center text-danger fw-bold">${item.eksikTur}</td>
-                        <td class="text-center"><span class="badge bg-light text-dark border">${item.toplamEksikNokta}</span></td>
-                        <td class="text-center">
-                            <div class="d-flex align-items-center justify-content-center">
-                                <span class="fw-bold text-primary me-2">%${item.performans}</span>
-                                <div class="progress" style="width: 50px; height: 6px;">
-                                    <div class="progress-bar" style="width: ${item.performans}%"></div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                `).join('');
-
-                // 2. Grafiği Çiz
-                renderChart(data);
-
-            } catch (err) {
-                console.error("Hata:", err);
+            // 3. Veri geldiyse (Hafızadan veya API'den) işle
+            if (rawData && rawData !== "[]") {
+                const data = JSON.parse(rawData);
+                $("#statusInfo").hide();
+                tabloyuDoldur(data);
+                grafikleriCiz(data);
+            } else {
+                // Hâlâ veri yoksa hata mesajını göster
+                $("#perfBody").html('<tr><td colspan="6" class="text-center text-danger fw-bold"><i class="bi bi-exclamation-triangle me-2"></i>Veri bulunamadı. Lütfen tarih seçip "Raporu Güncelle" butonuna basınız.</td></tr>');
             }
         }
 
-                function renderChart(data) {
-            const ctx = document.getElementById('perfChart').getContext('2d');
-            if (myChart) myChart.destroy();
+        function tabloyuDoldur(data) {
+            let rows = "";
+            data.forEach(item => {
+                // API'den gelen verinin property isimlerini garantiye alıyoruz
+                const ad = item.BekciAdi || item.bekciAdi || "---";
+                const toplam = item.ToplamTur ?? item.toplamTur ?? 0;
+                const eksiksiz = item.EksiksizTur ?? item.eksiksizTur ?? 0;
+                const eksikli = item.EksikliTur ?? item.eksikliTur ?? 0;
+                const eksikNokta = item.EksikNokta ?? item.eksikNokta ?? 0;
+                const oran = item.BasariOrani ?? item.basariOrani ?? 0;
 
-            // 1. Bekçiler için geniş ve canlı bir renk paleti tanımlıyoruz
-            const presetColors = [
-                '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74c3c',
-                '#858796', '#6f42c1', '#fd7e14', '#20c997', '#007bff',
-                '#d63384', '#5a5c69', '#f8f9fc', '#2c3e50', '#e67e22'
-            ];
+                rows += `<tr>
+                    <td class="ps-4 fw-bold text-primary">${ad}</td>
+                    <td class="text-center">${toplam}</td>
+                    <td class="text-center text-success">${eksiksiz}</td>
+                    <td class="text-center text-warning">${eksikli}</td>
+                    <td class="text-center text-danger">${eksikNokta}</td>
+                    <td class="text-center">
+                        <span class="badge ${oran > 80 ? 'bg-success' : 'bg-warning'} text-white">
+                            %${oran}
+                        </span>
+                    </td>
+                </tr>`;
+            });
+            $("#perfBody").html(rows);
+        }
 
-            // 2. Her bekçiye sırasıyla bir renk atıyoruz
-            const barColors = data.map((_, index) => presetColors[index % presetColors.length]);
+        function grafikleriCiz(data) {
+            const ctx = document.getElementById('perfChart')?.getContext('2d');
+            if (!ctx) return;
 
-            myChart = new Chart(ctx, {
+            let existingChart = Chart.getChart("perfChart");
+            if (existingChart) existingChart.destroy();
+
+            new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: data.map(x => x.bekciAdi),
+                    labels: data.map(x => x.BekciAdi || x.bekciAdi),
                     datasets: [{
-                        label: 'Başarı Oranı',
-                        data: data.map(x => x.performans),
-                        // Buradaki backgroundColor artık her bar için farklı renge sahip
-                        backgroundColor: barColors,
-                        borderRadius: 8,
-                        barThickness: 45,
-                        // Hover durumunda renklerin hafif şeffaflaşması için (Opsiyonel)
-                        hoverBackgroundColor: barColors.map(c => c + 'CC')
+                        label: 'Başarı Oranı (%)',
+                        data: data.map(x => x.BasariOrani || x.basariOrani),
+                        backgroundColor: 'rgba(13, 110, 253, 0.6)',
+                        borderColor: '#0d6efd',
+                        borderWidth: 1
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        datalabels: {
-                            anchor: 'end',
-                            align: 'top',
-                            color: '#444',
-                            font: { weight: 'bold', size: 12 },
-                            formatter: (value) => '%' + value
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 110,
-                            grid: { color: '#f0f0f0' },
-                            ticks: { callback: (value) => '%' + value }
-                        },
-                        x: { grid: { display: false } }
-                    }
+                    scales: { y: { beginAtZero: true, max: 100 } }
                 }
             });
         }

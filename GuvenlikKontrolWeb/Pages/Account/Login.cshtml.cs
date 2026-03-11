@@ -19,7 +19,7 @@ namespace GuvenlikKontrolWeb.Pages.Account
         {
 
             // SQL Authentication Baðlantý Dizesi
-            string connectionString = @"Server=OZAY\DATA;Database=GuvenlikKontrol;User Id=data;Password=data1234;TrustServerCertificate=True;";
+            string connectionString = @"Server=ARDA\ARDA;Database=GuvenlikKontrol;User Id=data;Password=data123;TrustServerCertificate=True;";
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {

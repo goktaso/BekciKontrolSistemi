@@ -14,5 +14,6 @@ namespace GuvenlikKontrolWeb.Data
 
         public DbSet<Nokta> Noktalar { get; set; }
         public DbSet<BekciKontrolKayitlari> BekciKontrolKayitlari { get; set; }
+        public DbSet<SistemKullanicisi> SistemKullanicilari { get; set; }
     }
 }

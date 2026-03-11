@@ -198,13 +198,38 @@
     <script>
         const beklenenNoktalar = ["İdari Bina","Shring Mak.","Kalite Kontrol","Eski Kazan Yıkama(Vernik)","Trafo","Pasta Dairesi","Alkid Zemin","Alkid 1.Kat","Alkid 2.Kat","Kazan Dairesi","İnşaat Su Deposu","İnşaat Arka","İnşaat Üretim Platform","İnşaat Ambalaj Depo","Atölye"];
 
-        document.addEventListener("DOMContentLoaded", () => {
-            const data = JSON.parse(sessionStorage.getItem("turData") || "[]");
-            if (data.length > 0) analizFinal(data);
+        document.addEventListener("DOMContentLoaded", async () => {
+            // 1. Önce hafızadaki veriye bak
+            let data = JSON.parse(sessionStorage.getItem("turData") || "[]");
+
+            // 2. Eğer hafıza boşsa veya yeni tarih seçilmişse API'den çek
+            if (data.length === 0) {
+                const bas = localStorage.getItem("baslangic");
+                const bit = localStorage.getItem("bitis");
+
+                if (bas && bit) {
+                    try {
+                        const res = await fetch(`/api/TurAnaliz?baslangic=${encodeURIComponent(bas)}&bitis=${encodeURIComponent(bit)}&t=${Date.now()}`);
+                        if (res.ok) {
+                            data = await res.json();
+                            sessionStorage.setItem("turData", JSON.stringify(data));
+                        }
+                    } catch (err) {
+                        console.error("Veri çekme hatası:", err);
+                    }
+                }
+            }
+
+            // 3. Veri varsa analizi başlat
+            if (data && data.length > 0) {
+                analizFinal(data);
+            } else {
+                console.warn("Gösterilecek veri bulunamadı.");
+            }
         });
 
         function saniyeToHms(s) {
-            if(!s || s < 0) return "00:00";
+            if(!s || s < 0 || s === Infinity) return "00:00";
             const h = Math.floor(s / 3600);
             const m = Math.floor((s % 3600) / 60);
             const sec = s % 60;
@@ -212,17 +237,29 @@
         }
 
         function analizFinal(data) {
-            const tarihler = data.map(d => new Date(d.devriyeZamani)).filter(d => !isNaN(d)).sort((a,b) => a-b);
-            document.getElementById("lblBaslangic").innerText = tarihler[0].toLocaleDateString('tr-TR');
-            document.getElementById("lblBitis").innerText = tarihler[tarihler.length-1].toLocaleDateString('tr-TR');
+            // Mevcut analizFinal kodun aynen kalabilir, ama güvenli olması için
+            // tarihler kısmına küçük bir kontrol ekledim:
+            const tarihler = data
+                .filter(d => d.devriyeZamani)
+                .map(d => new Date(d.devriyeZamani))
+                .filter(d => !isNaN(d))
+                .sort((a,b) => a-b);
+
+            if (tarihler.length > 0) {
+                document.getElementById("lblBaslangic").innerText = tarihler[0].toLocaleDateString('tr-TR');
+                document.getElementById("lblBitis").innerText = tarihler[tarihler.length-1].toLocaleDateString('tr-TR');
+            }
 
             const turGruplar = {};
             let mukSay = 0, mList = "", aList = "";
 
             data.forEach(row => {
-                if ((row.satirTipi || row.SatirTipi) === "DETAY") {
+                // SatirTipi büyük-küçük harf duyarlılığı için kontrol
+                const tip = row.satirTipi || row.SatirTipi;
+                if (tip === "DETAY") {
                     const key = `${row.turNo}|${row.bekciAdi}`;
                     if (!turGruplar[key]) turGruplar[key] = { n: [], z: [], b: row.bekciAdi, t: row.devriyeZamani, no: row.turNo };
+
                     if (turGruplar[key].n.includes(row.kontrolNoktasiAdi)) {
                         mukSay++;
                         mList += `<tr><td class="ps-3">#${row.turNo}</td><td>${row.bekciAdi}</td><td class="text-danger fw-bold">${row.kontrolNoktasiAdi}</td><td class="text-center"><span class="badge bg-danger">TEKRAR</span></td></tr>`;
@@ -232,6 +269,7 @@
                 }
             });
 
+            // ... (Geri kalan analiz kodların aynı kalıyor)
             const pLog = {}, gLog = {};
             let tamT = 0, eksikT = 0, kTurT = 0, kTurB = 0, supheli = 0, tSureler = [];
 
@@ -246,9 +284,8 @@
                     eksikler.forEach(en => aList += `<tr><td class="ps-3">#${tur.no}</td><td>${tur.b}</td><td class="text-danger fw-bold">${en}</td><td class="text-end pe-3 text-muted small">${new Date(tur.t).toLocaleString()}</td></tr>`);
                 } else tamT++;
 
-                // Yeni Gösterge Hesapları
                 if(h >= 2 && h <= 5) { kTurT++; if(!isEksik) kTurB++; }
-                if(saniye > 0 && saniye < 600) supheli++; // 10 dk altı
+                if(saniye > 0 && saniye < 600) supheli++;
                 if(saniye > 0) tSureler.push(saniye);
 
                 const gun = new Date(tur.t).toLocaleDateString('tr-TR');
@@ -261,13 +298,15 @@
 
             // Atılmayan Tur (19:00 - 08:00)
             let atilmayan = 0;
-            let curr = new Date(tarihler[0]); curr.setMinutes(0,0,0);
-            while(curr <= tarihler[tarihler.length-1]){
-                const g = curr.getDay(), h = curr.getHours();
-                if((g===0||g===6) || (h>=19||h<8)){
-                    if(!data.find(x => Math.abs(new Date(x.devriyeZamani)-curr) <= 15*60000)) atilmayan++;
+            if(tarihler.length > 0) {
+                let curr = new Date(tarihler[0]); curr.setMinutes(0,0,0);
+                while(curr <= tarihler[tarihler.length-1]){
+                    const g = curr.getDay(), h = curr.getHours();
+                    if((g===0||g===6) || (h>=19||h<8)){
+                        if(!data.find(x => Math.abs(new Date(x.devriyeZamani)-curr) <= 15*60000)) atilmayan++;
+                    }
+                    curr.setHours(curr.getHours()+1);
                 }
-                curr.setHours(curr.getHours()+1);
             }
 
             // Kartları Bas
@@ -285,7 +324,10 @@
 
             document.getElementById("bodyGunluk").innerHTML = Object.keys(gLog).map(g => {
                 const s = gLog[g].s;
-                return `<tr><td class="ps-4 text-start">${g}</td><td><span class="badge bg-primary px-3 fs-6">${gLog[g].t}</span></td><td class="text-primary">${saniyeToHms(Math.min(...s))}</td><td class="text-danger">${saniyeToHms(Math.max(...s))}</td><td class="text-dark">${saniyeToHms(Math.round(s.reduce((a,b)=>a+b,0)/s.length))}</td></tr>`;
+                const minS = s.length ? Math.min(...s) : 0;
+                const maxS = s.length ? Math.max(...s) : 0;
+                const avgS = s.length ? Math.round(s.reduce((a,b)=>a+b,0)/s.length) : 0;
+                return `<tr><td class="ps-4 text-start">${g}</td><td><span class="badge bg-primary px-3 fs-6">${gLog[g].t}</span></td><td class="text-primary">${saniyeToHms(minS)}</td><td class="text-danger">${saniyeToHms(maxS)}</td><td class="text-dark">${saniyeToHms(avgS)}</td></tr>`;
             }).join('');
 
             document.getElementById("bodyPerformans").innerHTML = Object.keys(pLog).map(p => {

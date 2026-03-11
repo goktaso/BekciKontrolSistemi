@@ -1,27 +1,29 @@
 ﻿@page
 @model GuvenlikKontrolWeb.Pages.BekciPerformansModel
 @{
-    ViewData["Title"] = "Bekçi Performans Raporu";
+    ViewData["Title"] = "Bekçi Performans Analizi";
 }
 
 <div class="container-fluid animate__animated animate__fadeIn">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="text-primary fw-bold m-0"><i class="bi bi-person-badge me-2"></i>Bekçi Performans Analizi</h2>
-        <div id="tarihGosterge" class="badge bg-light text-dark border p-2"></div>
+        <div id="tarihGosterge" class="badge bg-light text-dark border p-3 shadow-sm">
+            <i class="bi bi-calendar-check me-2"></i><span id="lblBas">--</span> / <span id="lblBit">--</span>
+        </div>
     </div>
 
     <div id="statusInfo" class="alert alert-info shadow-sm border-start border-info border-4">
-        <i class="bi bi-info-circle-fill me-2"></i>Lütfen sol menüden tarih seçip "Raporu Güncelle" butonuna basınız.
+        <i class="bi bi-info-circle-fill me-2"></i>Veriler Dashboard ile senkronize ediliyor...
     </div>
 
     <div class="row">
         <div class="col-xl-12 mb-4">
             <div class="card shadow-sm border-0">
-                <div class="card-header py-3 bg-white d-flex align-items-center">
-                    <h6 class="m-0 font-weight-bold text-success"><i class="bi bi-bar-chart-line me-2"></i>Başarı Oranı Karşılaştırması (%)</h6>
+                <div class="card-header py-3 bg-white d-flex align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-bar-chart-line me-2"></i>Başarı Oranı Karşılaştırması (%)</h6>
                 </div>
                 <div class="card-body">
-                    <div style="height: 350px; width: 100%;">
+                    <div style="height: 300px; width: 100%;">
                         <canvas id="perfChart"></canvas>
                     </div>
                 </div>
@@ -35,15 +37,15 @@
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" id="perfTable">
+                        <table class="table table-hover align-middle mb-0 text-center">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="ps-4">Bekçi Adı</th>
-                                    <th class="text-center">Toplam Tur</th>
-                                    <th class="text-center">Eksiksiz Tur</th>
-                                    <th class="text-center">Eksikli Tur</th>
-                                    <th class="text-center">Eksik Nokta</th>
-                                    <th class="text-center">Başarı Oranı</th>
+                                    <th class="ps-4 text-start">Bekçi Adı</th>
+                                    <th>Toplam Tur</th>
+                                    <th class="text-success">Eksiksiz Tur</th>
+                                    <th class="text-warning">Eksikli Tur</th>
+                                    <th class="text-danger">Eksik Nokta</th>
+                                    <th style="width: 300px;">Başarı Oranı</th>
                                 </tr>
                             </thead>
                             <tbody id="perfBody">
@@ -57,104 +59,119 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        $(document).ready(function () {
-            // Sayfa açılır açılmaz veriyi çek
-            veriyiYukle();
+        const beklenenNoktalar = ["İdari Bina","Shring Mak.","Kalite Kontrol","Eski Kazan Yıkama(Vernik)","Trafo","Pasta Dairesi","Alkid Zemin","Alkid 1.Kat","Alkid 2.Kat","Kazan Dairesi","İnşaat Su Deposu","İnşaat Arka","İnşaat Üretim Platform","İnşaat Ambalaj Depo","Atölye"];
 
-            // Sol menüdeki butona basıldığında Layout sayfayı reload ediyor.
-            // Ama biz ne olur ne olmaz butonu burada da dinleyelim.
-            $(document).on('click', '#btnRapor', function () {
-                setTimeout(veriyiYukle, 1000);
-            });
+        $(document).ready(function () {
+            veriyiYukle();
         });
 
         async function veriyiYukle() {
-            // 1. Önce hafızayı (Session) kontrol et
-            let rawData = sessionStorage.getItem("performansData");
+            const bas = localStorage.getItem("baslangic");
+            const bit = localStorage.getItem("bitis");
 
-            // 2. Hafıza boşsa veya veri yoksa API'ye "ZORLA" git
-            if (!rawData || rawData === "[]") {
-                console.log("Hafıza boş, API'den taze veri isteniyor...");
+            if (!bas || !bit) return;
 
-                // Menüdeki tarihleri al, yoksa localStorage'dakileri dene
-                const bas = $("#menuBas").val() || localStorage.getItem("baslangic");
-                const bit = $("#menuBit").val() || localStorage.getItem("bitis");
+            // Tarih göstergesini güncelle
+            $("#lblBas").text(new Date(bas).toLocaleDateString('tr-TR'));
+            $("#lblBit").text(new Date(bit).toLocaleDateString('tr-TR'));
 
-                if (bas && bit) {
-                    try {
-                        // API'ye taze istek atıyoruz
-                        const res = await fetch(`/api/BekciPerformans?baslangic=${encodeURIComponent(bas)}&bitis=${encodeURIComponent(bit)}`);
-                        if (res.ok) {
-                            const data = await res.json();
-                            if(data && data.length > 0) {
-                                sessionStorage.setItem("performansData", JSON.stringify(data));
-                                rawData = JSON.stringify(data);
-                            }
-                        }
-                    } catch (err) {
-                        console.error("API Bağlantı Hatası:", err);
-                    }
+            try {
+                // Dashboard ile aynı API'den veriyi çekiyoruz (Senkronizasyon için şart)
+                const url = `/api/TurAnaliz?baslangic=${encodeURIComponent(bas)}&bitis=${encodeURIComponent(bit)}&_t=${Date.now()}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data && data.length > 0) {
+                    $("#statusInfo").hide();
+                    analiziBaslat(data);
+                } else {
+                    $("#perfBody").html('<tr><td colspan="6" class="p-4 text-danger">Veri bulunamadı.</td></tr>');
                 }
-            }
-
-            // 3. Veri geldiyse (Hafızadan veya API'den) işle
-            if (rawData && rawData !== "[]") {
-                const data = JSON.parse(rawData);
-                $("#statusInfo").hide();
-                tabloyuDoldur(data);
-                grafikleriCiz(data);
-            } else {
-                // Hâlâ veri yoksa hata mesajını göster
-                $("#perfBody").html('<tr><td colspan="6" class="text-center text-danger fw-bold"><i class="bi bi-exclamation-triangle me-2"></i>Veri bulunamadı. Lütfen tarih seçip "Raporu Güncelle" butonuna basınız.</td></tr>');
+            } catch (err) {
+                console.error("Yükleme Hatası:", err);
+                $("#statusInfo").text("Veri bağlantı hatası!").show();
             }
         }
 
-        function tabloyuDoldur(data) {
-            let rows = "";
-            data.forEach(item => {
-                // API'den gelen verinin property isimlerini garantiye alıyoruz
-                const ad = item.BekciAdi || item.bekciAdi || "---";
-                const toplam = item.ToplamTur ?? item.toplamTur ?? 0;
-                const eksiksiz = item.EksiksizTur ?? item.eksiksizTur ?? 0;
-                const eksikli = item.EksikliTur ?? item.eksikliTur ?? 0;
-                const eksikNokta = item.EksikNokta ?? item.eksikNokta ?? 0;
-                const oran = item.BasariOrani ?? item.basariOrani ?? 0;
+        function analiziBaslat(data) {
+            const pLog = {};
 
-                rows += `<tr>
-                    <td class="ps-4 fw-bold text-primary">${ad}</td>
-                    <td class="text-center">${toplam}</td>
-                    <td class="text-center text-success">${eksiksiz}</td>
-                    <td class="text-center text-warning">${eksikli}</td>
-                    <td class="text-center text-danger">${eksikNokta}</td>
-                    <td class="text-center">
-                        <span class="badge ${oran > 80 ? 'bg-success' : 'bg-warning'} text-white">
-                            %${oran}
-                        </span>
-                    </td>
-                </tr>`;
+            data.forEach(row => {
+                const tip = row.satirTipi || row.SatirTipi;
+                if (tip === "DETAY") {
+                    const bekci = row.bekciAdi;
+                    const turNo = row.turNo;
+
+                    if (!pLog[bekci]) pLog[bekci] = { turlar: {}, toplamTur: 0, tamTur: 0, eksikNokta: 0 };
+                    if (!pLog[bekci].turlar[turNo]) pLog[bekci].turlar[turNo] = new Set();
+
+                    pLog[bekci].turlar[turNo].add(row.kontrolNoktasiAdi);
+                }
             });
+
+            const finalData = [];
+            let rows = "";
+
+            Object.keys(pLog).forEach(bekci => {
+                const p = pLog[bekci];
+                const turNolar = Object.keys(p.turlar);
+                p.toplamTur = turNolar.length;
+
+                turNolar.forEach(no => {
+                    const okunanlar = p.turlar[no];
+                    const eksikler = beklenenNoktalar.filter(n => !okunanlar.has(n));
+
+                    if (eksikler.length === 0) {
+                        p.tamTur++;
+                    } else {
+                        p.eksikNokta += eksikler.length;
+                    }
+                });
+
+                // BAŞARI ORANI: (Tam Tur / Toplam Tur)
+                const oran = p.toplamTur > 0 ? Math.round((p.tamTur / p.toplamTur) * 100) : 0;
+
+                finalData.push({ ad: bekci, oran: oran });
+
+                rows += `
+                    <tr>
+                        <td class="ps-4 text-start fw-bold text-dark">${bekci}</td>
+                        <td class="fw-bold">${p.toplamTur}</td>
+                        <td class="text-success fw-bold">${p.tamTur}</td>
+                        <td class="text-warning fw-bold">${p.toplamTur - p.tamTur}</td>
+                        <td class="text-danger fw-bold">${p.eksikNokta}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <span class="me-2 fw-bold text-primary">%${oran}</span>
+                                <div class="progress w-100 shadow-sm" style="height: 12px;">
+                                    <div class="progress-bar ${oran > 80 ? 'bg-primary' : 'bg-warning'}" style="width: ${oran}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>`;
+            });
+
             $("#perfBody").html(rows);
+            grafikCiz(finalData);
         }
 
-        function grafikleriCiz(data) {
-            const ctx = document.getElementById('perfChart')?.getContext('2d');
-            if (!ctx) return;
-
+        function grafikCiz(chartData) {
+            const ctx = document.getElementById('perfChart').getContext('2d');
             let existingChart = Chart.getChart("perfChart");
             if (existingChart) existingChart.destroy();
 
             new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: data.map(x => x.BekciAdi || x.bekciAdi),
+                    labels: chartData.map(x => x.ad),
                     datasets: [{
                         label: 'Başarı Oranı (%)',
-                        data: data.map(x => x.BasariOrani || x.basariOrani),
-                        backgroundColor: 'rgba(13, 110, 253, 0.6)',
+                        data: chartData.map(x => x.oran),
+                        backgroundColor: 'rgba(13, 110, 253, 0.7)',
                         borderColor: '#0d6efd',
-                        borderWidth: 1
+                        borderWidth: 1,
+                        borderRadius: 8
                     }]
                 },
                 options: {

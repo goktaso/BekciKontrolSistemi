@@ -38,6 +38,8 @@
             box-shadow: 4px 0 15px rgba(0,0,0,0.2);
             transition: all 0.3s;
             z-index: 1050;
+            display: flex;
+            flex-direction: column;
         }
 
             .sidebar .nav-link {
@@ -86,7 +88,6 @@
             z-index: 1100;
         }
 
-        /* --- RESPONSIVE --- */
         @@media (max-width: 992px) {
             .mobile-top-bar {
                 display: flex;
@@ -106,28 +107,30 @@
             .content-area {
                 padding: 1rem;
             }
+        }
 
-            .d-flex.gap-2 {
-                flex-direction: column !important;
+        @@media print {
+            .no-print {
+                display: none !important;
             }
 
-            .btn-info, .btn-success, .btn-danger, .btn-warning {
-                width: 100% !important;
-                margin-bottom: 5px;
+            .content-area {
+                padding: 0 !important;
+                margin: 0 !important;
             }
         }
     </style>
 </head>
 <body>
 
-    <div class="mobile-top-bar shadow">
+    <div class="mobile-top-bar shadow no-print">
         <button class="btn btn-outline-light btn-sm" id="menu-toggle"><i class="bi bi-list fs-3"></i></button>
         <span class="fw-bold">GOM YÖNETİM</span>
         <div style="width: 40px;"></div>
     </div>
 
     <div class="d-flex" id="wrapper">
-        <div class="sidebar border-end shadow">
+        <div class="sidebar border-end shadow no-print">
             <div class="p-4 border-bottom text-center">
                 <h5 class="m-0 fw-bold" style="color: #00d2ff;">GÜVENLİK TUR</h5>
                 @if (User.Identity.IsAuthenticated)
@@ -143,18 +146,12 @@
             <ul class="nav flex-column mb-3 mt-3">
                 @if (User.Identity.IsAuthenticated)
                 {
-
-                    @* @if (User.IsInRole("Admin") || User.IsInRole("PowerUser"))
-                    { *@
                     <li><a class="nav-link" href="/Index"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
                     <li><a class="nav-link" href="/TurAnaliz"><i class="bi bi-search me-2"></i> Tur Analizi</a></li>
-
-                    
-                        <li><a class="nav-link" href="/EksikNokta"><i class="bi bi-exclamation-triangle me-2"></i> Eksik Nokta</a></li>
-                        <li><a class="nav-link" href="/GunlukTur"><i class="bi bi-calendar3 me-2"></i> Günlük Tur</a></li>
-                        <li><a class="nav-link" href="/BekciPerformans"><i class="bi bi-star me-2"></i> Bekçi Performansı</a></li>
-                        <li><a class="nav-link" href="/AtilmayanTur"><i class="bi bi-calendar-x me-2"></i> Atılmayan Tur</a></li>
-                   @*  } *@
+                    <li><a class="nav-link" href="/EksikNokta"><i class="bi bi-exclamation-triangle me-2"></i> Eksik Nokta</a></li>
+                    <li><a class="nav-link" href="/GunlukTur"><i class="bi bi-calendar3 me-2"></i> Günlük Tur</a></li>
+                    <li><a class="nav-link" href="/BekciPerformans"><i class="bi bi-star me-2"></i> Bekçi Performansı</a></li>
+                    <li><a class="nav-link" href="/AtilmayanTur"><i class="bi bi-calendar-x me-2"></i> Atılmayan Tur</a></li>
 
                     @if (User.IsInRole("Admin"))
                     {
@@ -190,12 +187,23 @@
                         </a>
                     }
 
-                    <form method="post" action="/Account/Logout">
+                    <form method="post" action="/Account/Logout" id="logoutForm">
                         @Html.AntiForgeryToken()
                         <button type="submit" class="btn btn-outline-danger btn-sm w-100 fw-bold">
                             <i class="bi bi-box-arrow-right me-2"></i> ÇIKIŞ YAP
                         </button>
                     </form>
+
+                    @* --- LOGO ALANI (ÇIKIŞ YAP ALTINDA) --- *@
+                    <div class="mt-4 pt-3 border-top border-secondary text-center no-print">
+                        <img src="/images/unlu-logo.png"
+                             alt="Şirket Logosu"
+                             style="max-width: 150px; max-height: 80px; object-fit: contain; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5));"
+                             onerror="this.src='/images/default-logo.png';">
+                        <div class="mt-2 small text-white-50" style="font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase;">
+                            GOM DENETİM SİSTEMİ
+                        </div>
+                    </div>
                 </div>
             }
         </div>
@@ -211,70 +219,53 @@
 
     <script>
         $(document).ready(function() {
-            // Menü Toggle
+            // Sidebar aç/kapat
             $("#menu-toggle").click(function(e) {
                 e.stopPropagation();
                 $("#wrapper").toggleClass("toggled");
             });
 
-            // Aktif link işaretleme
+            // Aktif linki işaretle
             const path = window.location.pathname;
             $('.sidebar .nav-link').each(function() {
                 if ($(this).attr('href') === path) $(this).addClass('active');
             });
 
-            // Tarihleri hatırla
+            // Tarihleri hafızadan doldur
             $("#menuBas").val(localStorage.getItem("baslangic"));
             $("#menuBit").val(localStorage.getItem("bitis"));
         });
 
-               async function raporuGetir() {
+        function raporuGetir() {
             const bas = $("#menuBas").val();
             const bit = $("#menuBit").val();
+
             if (!bas || !bit) return alert("Lütfen tarih seçiniz!");
+
+            // DÖNGÜ KONTROLÜ: Tarihler aynıysa işlem yapma
+            if (bas === localStorage.getItem("baslangic") && bit === localStorage.getItem("bitis")) {
+                console.log("Tarihler aynı, tazeleme gerekmiyor.");
+                return;
+            }
 
             $("#btnRapor").prop('disabled', true).text("Yükleniyor...");
 
-            try {
-                const isDashboard = window.location.pathname === "/" || window.location.pathname.includes("Index");
-                const isPerformans = window.location.pathname.includes("BekciPerformans");
+            localStorage.setItem("baslangic", bas);
+            localStorage.setItem("bitis", bit);
+            sessionStorage.setItem("baslangic", bas);
+            sessionStorage.setItem("bitis", bit);
 
-                // 1. ADIM: Bekçi Performans Verisini Çek (Dashboard veya Performans sayfasındaysak)
-                if (isDashboard || isPerformans) {
-                    const perfRes = await fetch(`/api/BekciPerformans?baslangic=${encodeURIComponent(bas)}&bitis=${encodeURIComponent(bit)}&t=${Date.now()}`);
-                    if (perfRes.ok) {
-                        const perfData = await perfRes.json();
-                        sessionStorage.setItem("performansData", JSON.stringify(perfData));
-                    }
-                }
+            // Eski verileri temizle
+            sessionStorage.removeItem("turData");
+            sessionStorage.removeItem("performansData");
 
-                // 2. ADIM: Tur Analiz Verisini Çek (Performans sayfası dışındaki her yerde)
-                if (!isPerformans) {
-                    const turRes = await fetch(`/api/TurAnaliz?baslangic=${encodeURIComponent(bas)}&bitis=${encodeURIComponent(bit)}&t=${Date.now()}`);
-                    if (turRes.ok) {
-                        const turData = await turRes.json();
-                        sessionStorage.setItem("turData", JSON.stringify(turData));
-                    }
-                }
-
-                // Tarihleri hatırla
-                localStorage.setItem("baslangic", bas);
-                localStorage.setItem("bitis", bit);
-
-                // Sayfayı yenile ki veriler tabloya dökülsün
-                window.location.reload();
-
-            } catch (err) {
-                console.error(err);
-                alert("Veri çekilirken bir hata oluştu!");
-            } finally {
-                $("#btnRapor").prop('disabled', false).html('<i class="bi bi-arrow-repeat me-1"></i> Raporu Güncelle');
-            }
+            // Sayfayı mevcut path üzerinden yenile
+            window.location.href = window.location.pathname;
         }
 
         function exportAllExcel() {
             let tables = document.querySelectorAll("table");
-            if (tables.length === 0) return alert("Dışa aktarılacak tablo bulunamadı!");
+            if (tables.length === 0) return alert("Tablo bulunamadı!");
             const wb = XLSX.utils.book_new();
             tables.forEach((table, index) => {
                 const ws = XLSX.utils.table_to_sheet(table);
@@ -283,26 +274,27 @@
             XLSX.writeFile(wb, `GOM_Rapor_${new Date().toLocaleDateString('tr-TR')}.xlsx`);
         }
 
-        // --- YENİ PDF FONKSİYONU ---
         function generatePDF() {
             const element = document.querySelector(".content-area");
-            if (!element) return alert("Yazdırılacak içerik bulunamadı!");
+            if (!element) return alert("İçerik bulunamadı!");
 
             const opt = {
-                margin:       [10, 10, 10, 10],
-                filename:     `GOM_Rapor_${new Date().toLocaleDateString('tr-TR')}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                margin: [5, 5, 5, 5],
+                filename: `GOM_Rapor_${new Date().toLocaleDateString('tr-TR')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, letterRendering: true, windowWidth: 1400 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
             };
 
-            // Butonları PDF'de gizle
-            const buttons = document.querySelectorAll(".btn-group, button");
-            buttons.forEach(b => b.style.visibility = "hidden");
+            const buttons = document.querySelectorAll(".btn, .btn-group, .filter-section, .alert, .no-print");
+            buttons.forEach(b => b.style.display = "none");
+
+            const originalZoom = element.style.zoom;
+            element.style.zoom = "0.8";
 
             html2pdf().set(opt).from(element).save().then(() => {
-                // PDF bittikten sonra butonları geri getir
-                buttons.forEach(b => b.style.visibility = "visible");
+                buttons.forEach(b => b.style.display = "");
+                element.style.zoom = originalZoom || "1";
             });
         }
     </script>

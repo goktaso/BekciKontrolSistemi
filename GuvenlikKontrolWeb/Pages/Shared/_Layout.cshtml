@@ -89,35 +89,41 @@
         }
 
         @@media (max-width: 992px) {
-            .mobile-top-bar {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
+            .mobile-top-bar
 
-            .sidebar {
-                position: fixed;
-                left: -260px;
-            }
+        {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-            #wrapper.toggled .sidebar {
-                left: 0;
-            }
+        .sidebar {
+            position: fixed;
+            left: -260px;
+        }
 
-            .content-area {
-                padding: 1rem;
-            }
+        #wrapper.toggled .sidebar {
+            left: 0;
+        }
+
+        .content-area {
+            padding: 1rem;
+        }
+
         }
 
         @@media print {
-            .no-print {
-                display: none !important;
-            }
+            .no-print
 
-            .content-area {
-                padding: 0 !important;
-                margin: 0 !important;
-            }
+        {
+            display: none !important;
+        }
+
+        .content-area {
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
         }
     </style>
 </head>
@@ -149,6 +155,10 @@
                     <li><a class="nav-link" href="/Index"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
                     <li><a class="nav-link" href="/TurAnaliz"><i class="bi bi-search me-2"></i> Tur Analizi</a></li>
                     <li><a class="nav-link" href="/EksikNokta"><i class="bi bi-exclamation-triangle me-2"></i> Eksik Nokta</a></li>
+
+                    <!-- YENİ EKLENEN BUTON -->
+                    <li><a class="nav-link" href="/MukerrerNoktalar"><i class="bi bi-layers-half me-2"></i> Mükerrer Kayıt</a></li>
+
                     <li><a class="nav-link" href="/GunlukTur"><i class="bi bi-calendar3 me-2"></i> Günlük Tur</a></li>
                     <li><a class="nav-link" href="/BekciPerformans"><i class="bi bi-star me-2"></i> Bekçi Performansı</a></li>
                     <li><a class="nav-link" href="/AtilmayanTur"><i class="bi bi-calendar-x me-2"></i> Atılmayan Tur</a></li>
@@ -194,8 +204,6 @@
                         </button>
                     </form>
 
-                    @* --- LOGO ALANI (ÇIKIŞ YAP ALTINDA) --- *@
-                    @* --- LOGO ALANI (ÇIKIŞ YAP ALTINDA) --- *@
                     <div class="mt-4 pt-3 border-top border-secondary text-center no-print">
                         <img src="/images/unlu-logo.png?v=@DateTime.Now.Ticks"
                              alt="Şirket Logosu"
@@ -220,19 +228,16 @@
 
     <script>
         $(document).ready(function() {
-            // Sidebar aç/kapat
             $("#menu-toggle").click(function(e) {
                 e.stopPropagation();
                 $("#wrapper").toggleClass("toggled");
             });
 
-            // Aktif linki işaretle
             const path = window.location.pathname;
             $('.sidebar .nav-link').each(function() {
                 if ($(this).attr('href') === path) $(this).addClass('active');
             });
 
-            // Tarihleri hafızadan doldur
             $("#menuBas").val(localStorage.getItem("baslangic"));
             $("#menuBit").val(localStorage.getItem("bitis"));
         });
@@ -243,7 +248,6 @@
 
             if (!bas || !bit) return alert("Lütfen tarih seçiniz!");
 
-            // DÖNGÜ KONTROLÜ: Tarihler aynıysa işlem yapma
             if (bas === localStorage.getItem("baslangic") && bit === localStorage.getItem("bitis")) {
                 console.log("Tarihler aynı, tazeleme gerekmiyor.");
                 return;
@@ -256,11 +260,9 @@
             sessionStorage.setItem("baslangic", bas);
             sessionStorage.setItem("bitis", bit);
 
-            // Eski verileri temizle
             sessionStorage.removeItem("turData");
             sessionStorage.removeItem("performansData");
 
-            // Sayfayı mevcut path üzerinden yenile
             window.location.href = window.location.pathname;
         }
 

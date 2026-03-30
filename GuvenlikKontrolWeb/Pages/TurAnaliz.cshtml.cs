@@ -41,29 +41,41 @@ namespace GuvenlikKontrolWeb.Pages
                 using var reader = await cmd.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
+                    // Ýndeksleri SQL SELECT sýrasýna göre düzelttik
                     TurAnalizData.Add(new TurAnalizItem
                     {
-                        OperasyonGunu = reader.GetDateTime(0),
-                        BekciAdi = reader.GetString(1),
-                        KontrolNoktasiAdi = reader.GetString(2),
-                        OkuyucuKodu = reader.GetValue(3)?.ToString() ?? "",
-                        DevriyeZamani = reader.GetDateTime(4)
+                        SatirTipi = reader["SatirTipi"].ToString(),
+                        BekciAdi = reader["BekciAdi"].ToString(),
+                        KontrolNoktasiAdi = reader["KontrolNoktasiAdi"].ToString(),
+                        OperasyonGunu = Convert.ToDateTime(reader["OperasyonGunu"]),
+                        DevriyeZamani = Convert.ToDateTime(reader["DevriyeZamani"]),
+                        TurNo = Convert.ToInt32(reader["TurNo"]),
+                        TurIciNo = Convert.ToInt32(reader["TurIciNo"]),
+                        IkiNoktaArasiSn = Convert.ToInt32(reader["IkiNoktaArasiSn"]),
+                        TurToplamSn = Convert.ToInt32(reader["TurToplamSn"]),
+                        IkiTurArasiSn = Convert.ToInt32(reader["IkiTurArasiSn"])
                     });
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Hata varsa TurAnalizData boþ kalýr
+                // Hata mesajýný görmek için geçici olarak buraya log ekleyebilirsiniz
+                // throw ex; 
             }
         }
     }
 
     public class TurAnalizItem
     {
-        public DateTime OperasyonGunu { get; set; }
+        public string SatirTipi { get; set; } // DETAY mi TOPLAM mi?
         public string BekciAdi { get; set; }
         public string KontrolNoktasiAdi { get; set; }
-        public string OkuyucuKodu { get; set; }
+        public DateTime OperasyonGunu { get; set; }
         public DateTime DevriyeZamani { get; set; }
+        public int TurNo { get; set; }
+        public int TurIciNo { get; set; }
+        public int IkiNoktaArasiSn { get; set; }
+        public int TurToplamSn { get; set; }
+        public int IkiTurArasiSn { get; set; }
     }
 }

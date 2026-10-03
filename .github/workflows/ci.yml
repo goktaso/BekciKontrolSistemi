@@ -1,0 +1,53 @@
+# Single project solution (GuvenlikKontrol.sln, net8.0), no test project. Only nuget.org packages are used.
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+
+      - name: Restore
+        run: dotnet restore GuvenlikKontrol.sln
+
+      - name: Build
+        run: dotnet build GuvenlikKontrol.sln --no-restore -c Release
+
+  vulnerable-packages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+
+      - name: Fail on High/Critical vulnerable packages (incl. transitive)
+        run: |
+          dotnet restore GuvenlikKontrol.sln
+          dotnet list GuvenlikKontrol.sln package --vulnerable --include-transitive | tee vuln.txt
+          if grep -E '^\s+>\s.*\s(High|Critical)\s' vuln.txt; then
+            echo "::error::High/Critical vulnerable NuGet packages found (see log)."
+            exit 1
+          fi
